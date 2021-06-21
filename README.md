@@ -55,20 +55,39 @@ The example samples were produced from mosquito samples using the pan-flavi prim
 
 1. ### Import Reference Sequences
 
-   ```bash
-   qiime tools import \
-     --type 'FeatureData[Sequence]' \
-     --input-path example_viral_db/moureau_2015_ref_sequences.fasta \
-     --output-path panflavi_ref_sequences.qza
-   
-   qiime tools import \
-     --type 'FeatureData[Taxonomy]' \
-     --input-format HeaderlessTSVTaxonomyFormat \
-     --input-path example_viral_db/moureau_2015_taxonomy.tsv \
-     --output-path panflavi_ref_taxonomy.qza
-   ```
+   1. ```bash
+      qiime tools import \
+        --type 'FeatureData[Sequence]' \
+        --input-path example_viral_db/moureau_2015_ref_sequences.fasta \
+        --output-path panflavi_ref_sequences.qza
+      
+      qiime tools import \
+        --type 'FeatureData[Taxonomy]' \
+        --input-format HeaderlessTSVTaxonomyFormat \
+        --input-path example_viral_db/moureau_2015_taxonomy.tsv \
+        --output-path panflavi_ref_taxonomy.qza
+      ```
 
-   
+2. ### Extract Reference Reads
+
+   1. ```bash
+      qiime feature-classifier extract-reads \
+        --i-sequences panflavi_ref_sequences.qza \
+        --p-f-primer TACAACATGATGGGAAAGAGAGAGAARAA \
+        --p-r-primer GTGTCCCAKCCRGCTGTGTCATC \
+        --p-min-length 200 \
+        --p-max-length 300 \
+        --o-reads panflavi_ref_seqs_redueced.qza
+      ```
+
+3. ### Train Classifier
+
+   1. ```bash
+      qiime feature-classifier fit-classifier-naive-bayes \
+        --i-reference-reads panflavi_ref_seqs_redueced.qza \
+        --i-reference-taxonomy ref-taxonomy.qza \
+        --o-classifier panflavi_ref_taxonomy.qza
+      ```
 
 
 
