@@ -64,13 +64,11 @@ The example samples were produced from mosquito samples using the pan-flavi prim
    qiime tools import \
      --type 'FeatureData[Taxonomy]' \
      --input-format HeaderlessTSVTaxonomyFormat \
-     --input-path 85_otu_taxonomy.txt \
-     --output-path ref-taxonomy.qza
+     --input-path example_viral_db/moureau_2015_taxonomy.tsv \
+     --output-path panflavi_ref_taxonomy.qza
    ```
 
    
-
-
 
 
 
