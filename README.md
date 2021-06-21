@@ -60,34 +60,36 @@ The example samples were produced from mosquito samples using the pan-flavi prim
       qiime tools import \
         --type 'FeatureData[Sequence]' \
         --input-path example_viral_db/moureau_2015_ref_sequences.fasta \
-        --output-path panflavi_ref_sequences.qza
+        --output-path classifier/panflavi_ref_sequences.qza
       
       qiime tools import \
         --type 'FeatureData[Taxonomy]' \
         --input-format HeaderlessTSVTaxonomyFormat \
         --input-path example_viral_db/moureau_2015_taxonomy.tsv \
-        --output-path panflavi_ref_taxonomy.qza
+        --output-path classifier/panflavi_ref_taxonomy.qza
       ```
 
 2. ### Extract Reference Reads
 
    1. ```bash
       qiime feature-classifier extract-reads \
-        --i-sequences panflavi_ref_sequences.qza \
+        --i-sequences classifier/panflavi_ref_sequences.qza \
         --p-f-primer TACAACATGATGGGAAAGAGAGAGAARAA \
         --p-r-primer GTGTCCCAKCCRGCTGTGTCATC \
         --p-min-length 200 \
         --p-max-length 300 \
-        --o-reads panflavi_ref_seqs_redueced.qza
+        --o-reads classifier/panflavi_ref_seqs_redueced.qza
       ```
+
+      
 
 3. ### Train Classifier
 
    1. ```bash
       qiime feature-classifier fit-classifier-naive-bayes \
-        --i-reference-reads panflavi_ref_seqs_redueced.qza \
-        --i-reference-taxonomy panflavi_ref_taxonomy.qza \
-        --o-classifier panflavi_classifier.qza
+        --i-reference-reads classifier/panflavi_ref_seqs_redueced.qza \
+        --i-reference-taxonomy classifier/panflavi_ref_taxonomy.qza \
+        --o-classifier classifier/panflavi_classifier.qza
       ```
 
 
@@ -120,9 +122,9 @@ We will be using the classifier generated in part1 to classify the 5 example sam
    ls trimmed_sequences
    ```
 
-### Importing Sequences into Qiime2
+2. ### Importing Sequences into Qiime2
 
-1. #### Create manifest file
+   1. #### Create manifest file
 
    This file is used by qiime2 to import the sequences into a qiime2 specific .qza file. Documentation on this import can be found at: [link]( https://docs.qiime2.org/2020.6/tutorials/importing/#sequence-data-with-sequence-quality-information-i-e-fastq)
    scroll down to the section titled *“Fastq manifest” formats*
@@ -139,15 +141,15 @@ We will be using the classifier generated in part1 to classify the 5 example sam
 
    
 
-2. #### qiime2 import command
+3. #### 	qiime2 import command
 
    ```bash
    module load qiime2
     
    qiime tools import \
      --type 'SampleData[PairedEndSequencesWithQuality]' \
-     --input-path AA_manifest \
-     --output-path paired-end-demux-AA.qza \
+     --input-path panflavi_manifest \
+     --output-path paired_end_demux_panflavi.qza \
      --input-format PairedEndFastqManifestPhred33V2
    ```
 
@@ -155,109 +157,105 @@ We will be using the classifier generated in part1 to classify the 5 example sam
 
    1. #### Notes on inputs: 
 
-      --type: tells qiime2 what type of sequence data is being imported, e.g., single or paired end
+      - --type: tells qiime2 what type of sequence data is being imported, e.g., single or paired end
 
-      --input-path: path to manifest file
+      - --input-path: path to manifest file
 
-      --output-path: name of output file
+      - --output-path: name of output file
 
-      --input-format tells qiime2 what format the sequencing data is. See link above for more information
+      - --input-format tells qiime2 what format the sequencing data is. See link above for more information
 
       
 
-3. ### Visualization of sequence quality
+4. ### Visualization of sequence quality
 
-This step produces plots of the average quality per base for the forward and reverse reads. This information is used to trim off the bases of low quality within the reads.
+   This step produces plots of the average quality per base for the forward and reverse reads. This information is used to trim off the bases of low quality within the reads.
 
-To produce the qiime2 visualization file, .qzv, use the following command:
+   To produce the qiime2 visualization file, .qzv, use the following command:
 
-```
- qiime demux summarize \
-  --i-data paired-end-demux-AA.qza \
-  --o-visualization demux_AA.qzv
-```
+   ```bash
+    qiime demux summarize \
+     --i-data paired-end-demux-panflavi.qza \
+     --o-visualization visual_output/demux_panflavi.qzv
+   ```
+
+   To visualize the .qzv file you have to visit https://view.qiime2.org/
+
+   
+
+5. ## Clustering sequences using DADA2
+
+   1. ​	This section is where we cluster the reads into 100% OTUs using the algorithm implemented by DADA2
+
+      Using the demux_AA.qzv we will decide where to trim and truncate our forward and reverse reads. 
+
+      ```
+      qiime dada2 denoise-paired \
+           --i-demultiplexed-seqs paired_end_demux_panflavi.qza \
+           --p-trim-left-f 0 \
+           --p-trim-left-r 0 \
+           --p-trunc-len-f 245 \
+           --p-trunc-len-r 100 \
+           --o-representative-sequences rep_seqs_dada2_panflavi.qza \
+           --o-table table_dada2_panflavi.qza \
+           --o-denoising-stats stats_dada2_panflavi.qza
+      
+      ```
+
+      #### Notes on inputs:
+
+   - --p-trim-left-f Trims all of the bases upto the base given for the forward reads. e.g., --p-trim-left-f 25 will trim base position 1-25 off all the reads.
+
+   *  --p-trim-left-r same as above but for reverse reads.
+   *  --p-trunc-len-f Truncates all of the bases after the base given for the forward reads. e.g., --p-trunc-len-f 200 will remove bases 201-end of read.
+   *  --p-trunc-len-r same as above but for reverse reads.
+
+6. ### Generate Metadata file using Keemei  
+
+   1. See instructions on the qiime2 website: https://docs.qiime2.org/2021.4/tutorials/metadata/
+   2. save file as ***panflavi_meta.tsv***
+
+   
+
+7. ### Visualizing feature table 
+
+   1. ```bash
+      qiime feature-table summarize \
+        --i-table table_dada2_panflavi.qza \
+        --o-visualization visual_output/table_panflavi.qzv \
+        --m-sample-metadata-file panflavi_meta.tsv
+      
+      qiime feature-table tabulate-seqs \
+        --i-data rrep_seqs_dada2_panflavi.qza \
+        --o-visualization visual_output/rep_seqs_panflavi.qzv
+        
+      ```
 
 
-
-To download the file from monsoon to your computer using a terminal:
-
-1. open a new local terminaluse the following command:
-2. run the following command
-
-```
-# scp <nauid>@monsoon.hpc.nau.edu:/scratch/<nauid>/qiime2_tutorial/demux_AA.qzv <path-to-local-directory>
-
-scp clr96@monsoon.hpc.nau.edu:/scratch/clr96/qiime2_tutorial/demux_AA.qzv /Users/Curly/Desktop
-```
-The demux_AA.qzv can be visualized at the following website [link](https://view.qiime2.org/)
-
-import or drag the file into the open vew.qiime2.org webpage.
-
-## Clustering sequences using DADA2
-
-This section is where we cluster the reads into 100% OTUs using the algorithm implemented by DADA2
-
-Using the demux_AA.qzv we will decide where to trim and truncate our forward and reverse reads. 
-
-```
-qiime dada2 denoise-paired \
- --i-demultiplexed-seqs paired-end-demux-AA.qza \
- --p-trim-left-f 0 \
- --p-trim-left-r 0 \
- --p-trunc-len-f 245 \
- --p-trunc-len-r 100 \
- --o-representative-sequences rep-seqs-dada2-AA.qza \
- --o-table table-dada2-AA.qza \
- --o-denoising-stats stats-dada2-AA.qza
-
-```
-
-Notes on inputs
-
-*  --p-trim-left-f Trims all of the bases upto the base given for the forward reads. e.g., --p-trim-left-f 25 will trim base position 1-25 off all the reads.
-*  --p-trim-left-r same as above but for reverse reads.
-*  --p-trunc-len-f Truncates all of the bases after the base given for the forward reads. e.g., --p-trunc-len-f 200 will remove bases 201-end of read.
-*  --p-trunc-len-r same as above but for reverse reads.
-
-
-### Generate Metadata file using Keemei  
-
-### Visualizing feature table 
-
-```
-qiime feature-table summarize \
-  --i-table table-dada2-AA.qza \
-  --o-visualization table-AA.qzv \
-  --m-sample-metadata-file AA_meta.tsv
-  
-qiime feature-table tabulate-seqs \
-  --i-data rep-seqs-dada2-AA.qza \
-  --o-visualization rep-seqs-AA.qzv
-  
-```
 
 ## Classification
 
-Using a naive bayes classifier, the features are classified against all publically available virus genomes.
+1. Using a naïve Bayes classifier, the features are classified against all publicly available virus genomes.
 
-```
+
+```bash
 
 qiime feature-classifier classify-sklearn   \
---i-classifier /scratch/clr96/classifier.qza  \
- --i-reads rep-seqs-dada2-AA.qza   \
- --o-classification taxonomy-AA.qza
+--i-classifier classifier/panflavi_classifier.qza  \
+ --i-reads rep_seqs_dada2_panflavi.qza   \
+ --o-classification taxonomy_panflavi.qza
  
 ```
 
 ## Species Bar plot
 
-```
+```bash
  
  qiime taxa barplot \
- --i-table paired-table-dada2.qza \ 
- --i-taxonomy trainingClassifier/Taxonomy/taxonomy-AA.qza \
- --m-metadata-file AA_meta.tsv \
- --o-visualization taxa-bar-plots.qzv
+ --i-table paired_end_demux_panflavi.qza \ 
+ --i-taxonomy taxonomy_panflavi.qza \
+ --m-metadata-file panflavi_meta.tsv \
+ --o-visualization visual_ouput/taxa_bar_plots_panflavi.qzv
 
 ```
 
@@ -268,25 +266,19 @@ This section we will produce a table that contains the feature id, sequences, an
 1. we have to reorient the feature table so the columns and rows match the taxonomy_AA.qza and paired-rep-seqs-dada2.qza. This is accomplished using the 
 feature-table transpose command:
 
-```
+```bash
 qiime feature-table transpose 
-  --i-table paired-table-dada2.qza \
-  --o-transposed-feature-table tansposed_table.qza \
+  --i-table paired_end_demux_panflavi.qza \
+  --o-transposed-feature-table tansposed_paired_end_demux_panflavi.qzaqza \
 
 ```
 
 2. Now we generate the table:
 
-```
+```bash
 qiime metadata tabulate 
   --m-input-file taxonomy_AA.qza \
   --m-input-file paired-rep-seqs-dada2.qza \
   --m-input-file transposed_table.qza \
   --o-visualization feat-tax-rep.qzv
-
 ```
-
-
-## TODO Creating your own classifier
-## TODO Diversity Statistics
-
