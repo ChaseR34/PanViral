@@ -10,7 +10,7 @@ Using the Qiime2 framework to develop a pipeline to classify pan-viral samples a
 
 ## Pipeline Steps Overview
 
-1. Create Custom Database
+1. Create Custom Classifier
    1. Following steps found on Qiime2 website: https://docs.qiime2.org/2021.4/tutorials/feature-classifier/
       1. import reference sequences
       2. Extract reference reads
@@ -31,6 +31,48 @@ Below is a tutorial classifying flaviviruses using pan-flavi primers.
 
 
 # PanFlavi Classification Tutorial
+
+
+
+## Clone git repository
+
+```
+git clone https://github.com/ChaseR34/PanViral
+
+cd PanViral/PanFlaviTutorial
+```
+
+The reference sequences to used are based on the flaviviruses described in Moureau et al. 2015 (https://doi.org/10.1371/journal.pone.0117849). The sequences are found in the directory **example_viral_db** in the file ***moureau_2015_ref_sequences.fasta***
+
+The example samples were produced from mosquito samples using the pan-flavi primer set described in Vina-Rodriguez et al. 2017 (https://doi.org/10.1155/2017/4248756). The primer name and sequence found in the table below:
+
+| Primer Name | Sequence                              | Location in Genome (AF196835) |
+| ----------- | ------------------------------------- | ----------------------------- |
+| PFlav-fAAR  | TACAACATGATGGGAAAG**A**GAGAGAA**R**AA | 9040 -- 9068                  |
+| PFlav-rKR   | GTGTCCCA**K**CC**R**GC**T**GTGTCATC   | 9305 -- 9283                  |
+
+## Create Custom Classifier
+
+1. ### Import Reference Sequences
+
+   ```bash
+   qiime tools import \
+     --type 'FeatureData[Sequence]' \
+     --input-path example_viral_db/moureau_2015_ref_sequences.fasta \
+     --output-path panflavi_ref_sequences.qza
+   
+   qiime tools import \
+     --type 'FeatureData[Taxonomy]' \
+     --input-format HeaderlessTSVTaxonomyFormat \
+     --input-path 85_otu_taxonomy.txt \
+     --output-path ref-taxonomy.qza
+   ```
+
+   
+
+
+
+
 
 ## Setup Project Folder
 
