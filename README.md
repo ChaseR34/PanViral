@@ -237,48 +237,50 @@ We will be using the classifier generated in part1 to classify the 5 example sam
 
 1. Using a naïve Bayes classifier, the features are classified against all publicly available virus genomes.
 
+   1. ```bash
+      qiime feature-classifier classify-sklearn   \
+      --i-classifier classifier/panflavi_classifier.qza  \
+       --i-reads rep_seqs_dada2_panflavi.qza   \
+       --o-classification taxonomy_panflavi.qza
+      ```
 
-```bash
+      
 
-qiime feature-classifier classify-sklearn   \
---i-classifier classifier/panflavi_classifier.qza  \
- --i-reads rep_seqs_dada2_panflavi.qza   \
- --o-classification taxonomy_panflavi.qza
- 
-```
+2. ## Visualizing Results
 
-## Species Bar plot
+   1. ```bash
+       qiime taxa barplot \
+       --i-table paired_end_demux_panflavi.qza \ 
+       --i-taxonomy taxonomy_panflavi.qza \
+       --m-metadata-file panflavi_meta.tsv \
+       --o-visualization visual_ouput/taxa_bar_plots_panflavi.qzv
+      
+      ```
 
-```bash
- 
- qiime taxa barplot \
- --i-table paired_end_demux_panflavi.qza \ 
- --i-taxonomy taxonomy_panflavi.qza \
- --m-metadata-file panflavi_meta.tsv \
- --o-visualization visual_ouput/taxa_bar_plots_panflavi.qzv
+3. ## Create Combined Table 
 
-```
+   This section we will produce a table that contains the feature id, sequences, and feature counts per sample.
 
-## Create Combined Table 
+   1. we have to reorient the feature table so the columns and rows match the taxonomy_AA.qza and paired-rep-seqs-dada2.qza. This is accomplished using the 
+     feature-table transpose command:
 
-This section we will produce a table that contains the feature id, sequences, and feature counts per sample.
+   ```bash
+   qiime feature-table transpose 
+     --i-table paired_end_demux_panflavi.qza \
+     --o-transposed-feature-table tansposed_paired_end_demux_panflavi.qza \
+   
+   ```
 
-1. we have to reorient the feature table so the columns and rows match the taxonomy_AA.qza and paired-rep-seqs-dada2.qza. This is accomplished using the 
-feature-table transpose command:
+   Now we generate the table:
 
-```bash
-qiime feature-table transpose 
-  --i-table paired_end_demux_panflavi.qza \
-  --o-transposed-feature-table tansposed_paired_end_demux_panflavi.qzaqza \
+   ```bash
+   qiime metadata tabulate 
+     --m-input-file taxonomy_panflavi.qza \
+     --m-input-file rep_seqs_dada2_panflavi.qza \
+     --m-input-file tansposed_paired_end_demux_panflavi.qza \
+     --o-visualization vfeat-tax-rep.qzv
+   ```
 
-```
+   ​	
 
-2. Now we generate the table:
-
-```bash
-qiime metadata tabulate 
-  --m-input-file taxonomy_AA.qza \
-  --m-input-file paired-rep-seqs-dada2.qza \
-  --m-input-file transposed_table.qza \
-  --o-visualization feat-tax-rep.qzv
-```
+   
