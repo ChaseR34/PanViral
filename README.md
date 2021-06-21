@@ -17,14 +17,13 @@ Using the Qiime2 framework to develop a pipeline to classify pan-viral samples a
       3. Train Classifier
       4. Test Classifier
 2. Classifying Samples (Modified Procedure from Qiime2 Website)
-   1. Setup Project Folder
-   2. Preparing Sequences
+   1. Preparing Sequences
       1. Trim sequences
       2. Import sequences
       3. Check quality of reads
-   3. Clustering Sequences (Dada2)
-   4. Classify Clusters
-   5. Generate Visualizations
+   2. Clustering Sequences (Dada2)
+   3. Classify Clusters
+   4. Generate Visualizations
 
 Below is a tutorial classifying flaviviruses using pan-flavi primers. 
 
@@ -51,7 +50,9 @@ The example samples were produced from mosquito samples using the pan-flavi prim
 | PFlav-fAAR  | TACAACATGATGGGAAAG**A**GAGAGAA**R**AA | 9040 -- 9068                  |
 | PFlav-rKR   | GTGTCCCA**K**CC**R**GC**T**GTGTCATC   | 9305 -- 9283                  |
 
-## Create Custom Classifier
+
+
+## Part 1: Create Custom Classifier
 
 1. ### Import Reference Sequences
 
@@ -85,115 +86,86 @@ The example samples were produced from mosquito samples using the pan-flavi prim
    1. ```bash
       qiime feature-classifier fit-classifier-naive-bayes \
         --i-reference-reads panflavi_ref_seqs_redueced.qza \
-        --i-reference-taxonomy ref-taxonomy.qza \
-        --o-classifier panflavi_ref_taxonomy.qza
+        --i-reference-taxonomy panflavi_ref_taxonomy.qza \
+        --o-classifier panflavi_classifier.qza
       ```
 
 
 
-## Setup Project Folder
-
-```
-mkdir qiime2_tutorial
-cd qiime2_tutorial
-```
-
-Adding folders for sequences
-
-```bash
-mkdir linked_sequences trimmed_sequences scripts
-
-```
-
-Copy over useful bash scripts to scripts folder
-
-```bash
-cp /scratch/clr96/qiime_tutuorial/scripts/make_manifest_file.sh scripts
-cp /scratch/clr96/qiime_tutuorial/scripts/trimReads.sh scripts
-
-#check scripts are in folder
-
-ls scripts
-
-```
-
-## Preparing Sequences for qiime2
-
-### Create symbolic-link of the original sequences into the *linked_sequences* folder
-
-```
-ln -s /scratch/clr96/qiime2_tutorial/sequences/*fastq* linked_sequences
-
-#check sequences are in the folder
-
-ls linked_sequences
-
-```
-The reason you link the sequences instead of copying or using the direct path to where the sequences are stored is safety and saves space. If you accidentally delete or attempt to modify the linked files, the original files will not be changed.
 
 
-### Trim Sequences using bbduk
+## Part 2: Classifying Samples
 
-bbduk will trim off the primers by matching the supplied primer sequences to the first 30bp of the sequencing reads. The primer sequences are supplied to it via a reference file. In our case it will be the following file:
-```
-ln -s /scratch/clr96/qiime2_tutorial/primers.fasta .
-```
+### objective:
 
-The trimReads.sh bash script calls bbduk for you. The script takes three arguments, <path-to-sequences-dir>, <path-to-primer-file>, and <path-to-output-dir>
-
-```
-bash ./scripts/trimReads.sh linked_sequences primers.fasta trimmed_sequences
-
-#check trimmed_sequences
-ls trimmed_sequences
-```
+We will be using the classifier generated in part1 to classify the 5 example samples found in the folder **example_sequences**
 
 
-## Importing Sequences in qiime2
 
-### Create manifest file
+## Preparing Sequences
 
-This file is used by qiime2 to import the sequences into a qiime2 specific .qza file. Documentation on this import can be found at: [link]( https://docs.qiime2.org/2020.6/tutorials/importing/#sequence-data-with-sequence-quality-information-i-e-fastq)
-scroll down to the section titled *“Fastq manifest” formats*
+1. ####  Trim Sequences using bbduk
 
-The make_manifest_file.sh bash script will be used to generate your manifest:
+   bbduk will trim off the primers by matching the supplied primer sequences to the first 30bp of the sequencing reads. The primer sequences are supplied to it via a reference file. The file can be found in the **primers** directory and the file name is ***primers.fasta***.
 
-```
-bash ./scripts/make_manifest_file.sh -d trimmed_sequences -o AA_manifest
+   The trimReads.sh bash script calls bbduk for you. The script takes three arguments, <path-to-sequences-dir>, <path-to-primer-file>, and <path-to-output-dir>
 
-#check the generated manifest file
+   ```bash
+   
+   mkdir example_sequences_trimmed
+   
+   bash ./scripts/trimReads.sh linked_sequences primers/primers.fasta example_sequences_trimmed
+   
+   #check trimmed_sequences
+   ls trimmed_sequences
+   ```
 
-cat AA_manifest | column -t
+### Importing Sequences into Qiime2
 
-```
+1. #### Create manifest file
 
+   This file is used by qiime2 to import the sequences into a qiime2 specific .qza file. Documentation on this import can be found at: [link]( https://docs.qiime2.org/2020.6/tutorials/importing/#sequence-data-with-sequence-quality-information-i-e-fastq)
+   scroll down to the section titled *“Fastq manifest” formats*
 
-### qiime2 import command
+   The make_manifest_file.sh bash script will be used to generate your manifest:
 
-```
-module load qiime2
- 
-qiime tools import \
-  --type 'SampleData[PairedEndSequencesWithQuality]' \
-  --input-path AA_manifest \
-  --output-path paired-end-demux-AA.qza \
-  --input-format PairedEndFastqManifestPhred33V2
+   ```bash
+   bash ./scripts/make_manifest_file.sh -d trimmed_sequences -o panflavi_manifest
+   
+   #check the generated manifest file
+   
+   cat panflavi_manifest | column -t
+   ```
 
-```
+   
 
-Notes on inputs: 
+2. #### qiime2 import command
 
---type: tells qiime2 what type of sequence data is being imported, e.g., single or paired end
+   ```bash
+   module load qiime2
+    
+   qiime tools import \
+     --type 'SampleData[PairedEndSequencesWithQuality]' \
+     --input-path AA_manifest \
+     --output-path paired-end-demux-AA.qza \
+     --input-format PairedEndFastqManifestPhred33V2
+   ```
 
---input-path: path to manifest file
+   
 
---output-path: name of output file
+   1. #### Notes on inputs: 
 
---input-format tells qiime2 what format the sequencing data is. See link above for more information
+      --type: tells qiime2 what type of sequence data is being imported, e.g., single or paired end
 
-Now you should have a file titled paired-end-demux-AA.qza.
+      --input-path: path to manifest file
 
-###  Visualization of sequence quality
+      --output-path: name of output file
+
+      --input-format tells qiime2 what format the sequencing data is. See link above for more information
+
+      
+
+3. ### Visualization of sequence quality
 
 This step produces plots of the average quality per base for the forward and reverse reads. This information is used to trim off the bases of low quality within the reads.
 
