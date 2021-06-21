@@ -33,6 +33,12 @@ Below is a tutorial classifying flaviviruses using pan-flavi primers.
 
 
 
+Note: This tutorial expects that you have Qiime2 already installed. If you do not, please follow the directions on their website: 
+
+https://docs.qiime2.org/2021.4/install/
+
+
+
 ## Clone git repository
 
 ```
@@ -248,7 +254,9 @@ We will be using the classifier generated in part1 to classify the 5 example sam
 
 2. ## Visualizing Results
 
-   1. ```bash
+   1. #### Create Taxa Bar plot
+
+   2. ```bash
        qiime taxa barplot \
        --i-table paired_end_demux_panflavi.qza \ 
        --i-taxonomy taxonomy_panflavi.qza \
@@ -278,7 +286,7 @@ We will be using the classifier generated in part1 to classify the 5 example sam
      --m-input-file taxonomy_panflavi.qza \
      --m-input-file rep_seqs_dada2_panflavi.qza \
      --m-input-file tansposed_paired_end_demux_panflavi.qza \
-     --o-visualization vfeat-tax-rep.qzv
+     --o-visualization visual_output/feat-tax-rep.qzv
    ```
 
    ​	
