@@ -16,12 +16,15 @@
 import os
 import pkg_resources
 
-from q2_pan_classifier.format_types import MyString
-def create_classifier() -> MyString:
-    print("testing one, two, three")
-    cool = MyString
-    cool.__name__ = "Chase"
-    return cool
+from q2_pan_classifier.format_types import MyStringFormat
+def create_classifier() -> str:
+    # print("testing one, two, three")
+    # cool = MyStringFormat()
+    # # cool.__name__ = "Chase"
+    # with open(cool.path, 'w') as ff:
+    #     ff.write("Chase's Cool Project")
 
-def test_pipeline(ctx, table):
-    ctx.get_actions
+    return "Chase's Cool Project"
+
+# def test_pipeline(ctx, table):
+#     ctx.get_actions

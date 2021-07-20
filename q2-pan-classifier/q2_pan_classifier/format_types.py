@@ -18,5 +18,15 @@ import os
 import qiime2.plugin.model as model
 from qiime2.plugin import SemanticType
 
-MyString = SemanticType('Testing')
+MyString = SemanticType('MyString')
+
+
+class MyStringFormat(model.TextFileFormat):
+	def _validate_(self, level):
+		pass
+
+	
+
+
+MyStringDirFormat = model.SingleFileDirectoryFormat('MyStringDirFormat', 'text.txt', MyStringFormat )
 

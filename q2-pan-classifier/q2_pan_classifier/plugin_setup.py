@@ -18,7 +18,7 @@ from qiime2.plugin import Plugin, SemanticType, model
 
 import q2_pan_classifier.actions as actions
 
-from q2_pan_classifier.format_types import MyString
+from q2_pan_classifier.format_types import MyString, MyStringFormat, MyStringDirFormat
 
 from q2_types.feature_table import FeatureTable, Frequency
 # This is the plugin object. It is what the framework will load and what an
@@ -28,6 +28,8 @@ plugin = Plugin("pan_classifier", version="0.0.1.dev",
                 website="https://github.com/ebolyen/q2-reveal")
 
 plugin.register_semantic_types(MyString)
+plugin.register_semantic_type_to_format(MyString, MyStringDirFormat )
+plugin.register_formats(MyStringFormat, MyStringDirFormat)
 
 
 plugin.methods.register_function(
@@ -41,4 +43,4 @@ plugin.methods.register_function(
     description="Creates a classifier and classifies them using machine learning"
 )
 
-# importlib.import_module("q2_reveal.transformers")
+importlib.import_module("q2_pan_classifier.transformers")

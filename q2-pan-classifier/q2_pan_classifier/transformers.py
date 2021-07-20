@@ -12,3 +12,24 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+
+import os
+import pkg_resources
+
+from q2_pan_classifier.format_types import MyStringFormat
+from q2_pan_classifier.plugin_setup import plugin
+
+@plugin.register_transformer
+def _1(data: str) -> MyStringFormat:
+    print("testing one, two, three")
+    cool = MyStringFormat()
+    # cool.__name__ = "Chase"
+    with open(cool.path, 'w') as ff:
+        ff.write(data)
+
+
+    return cool
+
+
+
+
