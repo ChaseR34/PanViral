@@ -275,7 +275,7 @@ We will be using the classifier generated in part1 to classify the 5 example sam
    ```bash
    qiime feature-table transpose 
      --i-table table_dada2_panflavi.qza \
-     --o-transposed-feature-table tansposed_table_dada2_panflavi.qza \
+     --o-transposed-feature-table transposed_table_dada2_panflavi.qza \
    
    ```
 
@@ -285,7 +285,7 @@ We will be using the classifier generated in part1 to classify the 5 example sam
    qiime metadata tabulate 
      --m-input-file taxonomy_panflavi.qza \
      --m-input-file rep_seqs_dada2_panflavi.qza \
-     --m-input-file tansposed_table_dada2_panflavi.qza \
+     --m-input-file transposed_table_dada2_panflavi.qza \
      --o-visualization visual_output/feat-tax-rep.qzv
    ```
 
