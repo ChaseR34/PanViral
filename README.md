@@ -258,7 +258,7 @@ We will be using the classifier generated in part1 to classify the 5 example sam
 
    2. ```bash
        qiime taxa barplot \
-       --i-table paired_end_demux_panflavi.qza \ 
+       --i-table table_dada2_panflavi.qza \ 
        --i-taxonomy taxonomy_panflavi.qza \
        --m-metadata-file panflavi_meta.tsv \
        --o-visualization visual_ouput/taxa_bar_plots_panflavi.qzv
@@ -274,7 +274,7 @@ We will be using the classifier generated in part1 to classify the 5 example sam
 
    ```bash
    qiime feature-table transpose 
-     --i-table paired_end_demux_panflavi.qza \
+     --i-table table_dada2_panflavi.qza \
      --o-transposed-feature-table tansposed_paired_end_demux_panflavi.qza \
    
    ```
