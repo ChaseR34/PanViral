@@ -12,12 +12,23 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-
+import qiime2
+from qiime2.core.type.primitive import Str
+from q2_types.sample_data import SampleData
 import os
 import pkg_resources
 
 from q2_pan_classifier.format_types import MyStringFormat
-def create_classifier() -> str:
+
+from q2_types.sample_data import SampleData
+from q2_types.per_sample_sequences import PairedEndFastqManifestPhred33V2, PairedEndSequencesWithQuality, \
+    SingleLanePerSamplePairedEndFastqDirFmt
+from q2_types.feature_data import Sequence
+
+from qiime2.plugin import model
+
+
+def test_function() -> str:
     # print("testing one, two, three")
     # cool = MyStringFormat()
     # # cool.__name__ = "Chase"
@@ -26,5 +37,70 @@ def create_classifier() -> str:
 
     return "Chase's Cool Project"
 
-# def test_pipeline(ctx, table):
-#     ctx.get_actions
+
+def import_sequences() -> PairedEndFastqManifestPhred33V2:
+    pass
+    # directory = SingleLanePerSamplePairedEndFastqDirFmt()
+    #
+    # out.export_data(directory.path)
+    # out.save()
+    #
+    #
+    # return out
+
+
+# , : str, forward_primer: str, reverse_primer: str
+
+def create_classifier(ctx,
+                      ref_seqs_file,
+                      ref_tax_file,
+                      f_primer,
+                      r_primer,
+                      min_len,
+                      max_len):
+
+    extract_refs = ctx.get_action('feature_classifier', 'extract_reads')
+    train_classifier = ctx.get_action('feature_classifier', 'fit_classifier_naive_bayes')
+
+    results = []
+
+    ref_seqs = qiime2.Artifact.import_data(type='FeatureData[Sequence]',
+                                           view=ref_seqs_file,
+                                           view_type=None)
+
+    ref_tax = qiime2.Artifact.import_data(type='FeatureData[Taxonomy]',
+                                           view=ref_tax_file,
+                                           view_type='HeaderlessTSVTaxonomyFormat')
+
+    trimmed_refs = extract_refs(sequences=ref_seqs,
+                                f_primer=f_primer,
+                                r_primer=r_primer,
+                                min_length=min_len,
+                                max_length=max_len)
+
+    trained_class = train_classifier(reference_reads=trimmed_refs.reads,
+                                     reference_taxonomy=ref_tax)
+
+    results += trimmed_refs
+    results += trained_class
+
+    return tuple(results)
+
+
+def prep_sequence_reads(ctx, manifest_file_path):
+    results = []
+
+    cut_adapt = ctx.get_action('cutadapt', 'trim_paired')
+    create_table_viz = ctx.get_action('demux', 'summarize')
+
+    read_seqs = qiime2.Artifact.import_data(type='SampleData[PairedEndSequencesWithQuality]',
+                                view = manifest_file_path,
+                                view_type = 'PairedEndFastqManifestPhred33V2')
+
+    trimmed_reads = cut_adapt(demultiplexed_sequences=read_seqs)
+    table_viz = create_table_viz(data=trimmed_reads.trimmed_sequences)
+
+    results += table_viz
+
+    return tuple(results)
+

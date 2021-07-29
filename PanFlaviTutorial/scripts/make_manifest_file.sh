@@ -65,7 +65,7 @@ create_manifest(){
 
   export readpath=$dirpath
 
-  for forward in $(find -L $readpath -name "*R1*output*" -type f); do
+  for forward in $(find -L $readpath -name "*R1*" -type f); do
       echo $forward
      reverse=${forward/R1/R2}
 

@@ -15,9 +15,12 @@
 
 import os
 import pkg_resources
-
+import qiime2
 from q2_pan_classifier.format_types import MyStringFormat
 from q2_pan_classifier.plugin_setup import plugin
+from qiime2.plugin.model import DirectoryFormat
+from q2_types.sample_data import SampleData
+from q2_types.per_sample_sequences import PairedEndFastqManifestPhred33V2, PairedEndSequencesWithQuality, SingleLanePerSamplePairedEndFastqDirFmt
 
 @plugin.register_transformer
 def _1(data: str) -> MyStringFormat:
@@ -30,6 +33,14 @@ def _1(data: str) -> MyStringFormat:
 
     return cool
 
+def _2(sequences: SampleData[PairedEndSequencesWithQuality] ) -> SingleLanePerSamplePairedEndFastqDirFmt:
+
+
+    directory = SingleLanePerSamplePairedEndFastqDirFmt()
+
+    sequences.export_data(directory.path)
+
+    return directory
 
 
 

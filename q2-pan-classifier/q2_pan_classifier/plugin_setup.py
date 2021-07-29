@@ -13,12 +13,17 @@
 #   limitations under the License.
 import importlib
 
-from qiime2.plugin import Str
-from qiime2.plugin import Plugin, SemanticType, model
+from qiime2.plugin import Str, Int
+from qiime2.plugin import Plugin, Visualization
 
 import q2_pan_classifier.actions as actions
 
 from q2_pan_classifier.format_types import MyString, MyStringFormat, MyStringDirFormat
+from q2_types.sample_data import SampleData
+from q2_types.per_sample_sequences import PairedEndFastqManifestPhred33V2, PairedEndSequencesWithQuality
+from q2_types.feature_data import FeatureData, Sequence
+from q2_feature_classifier.classifier import TaxonomicClassifier
+
 
 from q2_types.feature_table import FeatureTable, Frequency
 # This is the plugin object. It is what the framework will load and what an
@@ -33,7 +38,7 @@ plugin.register_formats(MyStringFormat, MyStringDirFormat)
 
 
 plugin.methods.register_function(
-    function=actions.create_classifier.create_classifier,
+    function=actions.test_function,
     inputs=None,
     outputs=[('cool', MyString)],
     parameters={},
@@ -44,3 +49,42 @@ plugin.methods.register_function(
 )
 
 importlib.import_module("q2_pan_classifier.transformers")
+
+
+plugin.pipelines.register_function(
+    function=actions.create_classifier,
+    inputs=[],
+    outputs=[('ref_seqs', FeatureData[Sequence]),
+             ('trained_classifier', TaxonomicClassifier)],
+    parameters={
+        'ref_seqs_file': Str,
+        'ref_tax_file': Str,
+        'f_primer': Str,
+        'r_primer': Str,
+        'min_len': Int,
+        'max_len': Int
+    },
+    input_descriptions=None,
+    parameter_descriptions=None,
+    name='Create Classifier',
+    description="test"
+)
+plugin.pipelines.register_function(
+    function=actions.prep_sequence_reads,
+    inputs=[],
+    outputs=[('table_viz', Visualization)],
+    parameters={
+        'manifest_file_path': Str,
+
+    },
+    input_descriptions=None,
+    parameter_descriptions=None,
+    name='Read Quality Visualization',
+    description="test"
+)
+
+
+
+
+
+
