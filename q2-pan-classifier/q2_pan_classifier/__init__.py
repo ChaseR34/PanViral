@@ -11,9 +11,9 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-from q2_pan_classifier.actions.create_classifier import test_function, create_classifier, prep_sequence_reads, classify_reads
-
+from q2_pan_classifier.actions.create_classifier import (test_function, create_classifier, prep_sequence_reads,
+                                                         classify_reads, visualization_final)
 # Good practice is to explicitely mark what is "available" for
 # subpackage export. This is only used by the `from x import *` syntax, but
 # it also keeps linters from complaining
-__all__ = ['test_function', 'create_classifier', 'prep_sequence_reads', 'classify_reads']
+__all__ = ['test_function', 'create_classifier', 'prep_sequence_reads', 'classify_reads', 'visualization_final']

@@ -168,3 +168,18 @@ plugin.pipelines.register_function(
     name='Classify Reads',
     description="Using a trained classifier to classify unknown reads"
 )
+
+# plugin.visualizers.register_function(
+#     function=actions.visualization_final,
+#     inputs={'alpha_diversity': SampleData[AlphaDiversity]},
+#     parameters={'metadata': Metadata},
+#     input_descriptions={
+#         'alpha_diversity': 'Vector of alpha diversity values by sample.'
+#     },
+#     parameter_descriptions={
+#         'metadata': 'The sample metadata.'
+#     },
+#     name='Alpha diversity comparisons',
+#     description=("Visually and statistically compare groups of alpha diversity"
+#                  " values.")
+# )

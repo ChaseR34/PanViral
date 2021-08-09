@@ -136,3 +136,6 @@ def classify_reads(ctx, samp_reads, trunc_len_f, trunc_len_r, trained_classifier
     results += bar_viz
 
     return tuple(results)
+
+def visualization_final(output_dir: str) -> None:
+    print(output_dir)
