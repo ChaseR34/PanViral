@@ -13,19 +13,20 @@
 #   limitations under the License.
 import importlib
 
-from qiime2.plugin import Str, Int
+from qiime2.plugin import Str, Int, Range
 from qiime2.plugin import Plugin, Visualization
 
 import q2_pan_classifier.actions as actions
 
 from q2_pan_classifier.format_types import MyString, MyStringFormat, MyStringDirFormat
+from q2_dada2._stats import DADA2Stats
 from q2_types.sample_data import SampleData
 from q2_types.per_sample_sequences import PairedEndFastqManifestPhred33V2, PairedEndSequencesWithQuality
 from q2_types.feature_data import FeatureData, Sequence
-from q2_feature_classifier.classifier import TaxonomicClassifier
-
+from q2_feature_classifier.classifier import TaxonomicClassifier, Taxonomy
 
 from q2_types.feature_table import FeatureTable, Frequency
+
 # This is the plugin object. It is what the framework will load and what an
 # interface will interact with. Basically every registration we perform will
 # involve this object in some way.
@@ -33,9 +34,8 @@ plugin = Plugin("pan_classifier", version="0.0.1.dev",
                 website="https://github.com/ebolyen/q2-reveal")
 
 plugin.register_semantic_types(MyString)
-plugin.register_semantic_type_to_format(MyString, MyStringDirFormat )
+plugin.register_semantic_type_to_format(MyString, MyStringDirFormat)
 plugin.register_formats(MyStringFormat, MyStringDirFormat)
-
 
 plugin.methods.register_function(
     function=actions.test_function,
@@ -50,7 +50,6 @@ plugin.methods.register_function(
 
 importlib.import_module("q2_pan_classifier.transformers")
 
-
 plugin.pipelines.register_function(
     function=actions.create_classifier,
     inputs=[],
@@ -61,11 +60,21 @@ plugin.pipelines.register_function(
         'ref_tax_file': Str,
         'f_primer': Str,
         'r_primer': Str,
-        'min_len': Int,
-        'max_len': Int
+        'min_len': Int % Range(0, None),
+        'max_len': Int % Range(0, None)
     },
     input_descriptions=None,
-    parameter_descriptions=None,
+    parameter_descriptions={
+        'ref_seqs_file': "File path to the reference sequence fasta file. ",
+        'ref_tax_file': "File path to the reference taxonomy file. Must be a TSV file. ",
+        'f_primer': "Forward primer to trim the reference sequences to be only the amplified region",
+        'r_primer': "Reverse primer to trim the reference sequences to be only the amplified region",
+        'min_len': "Minimum length of the trimmed sequences. Any sequences shorter than this will be removed from the analysis",
+        'max_len': "Maximum length of the trimmed sequences. Any sequences longer than this will be removed from the analysis"
+    },
+    output_descriptions={'ref_seqs': 'Path where reference sequence Artifact will be written',
+                         'trained_classifier': 'Path where the trained classifier Artifact will be written'
+                         },
     name='Create Classifier',
     description="test"
 )
@@ -75,16 +84,87 @@ plugin.pipelines.register_function(
     outputs=[('table_viz', Visualization)],
     parameters={
         'manifest_file_path': Str,
-
+        'primer_f': Str,
+        'primer_r': Str
     },
     input_descriptions=None,
-    parameter_descriptions=None,
+    parameter_descriptions={
+        'manifest_file_path': 'Path to manifest file',
+        'primer_f': 'Sequence of an adapter ligated to the 3\' end. The '
+                    'adapter and any subsequent bases are trimmed. If a `$` '
+                    'is appended, the adapter is only found if it is at the '
+                    'end of the read. Search in forward read. If your '
+                    'sequence of interest is "framed" by a 5\' and a 3\' '
+                    'adapter, use this parameter to define a "linked" primer '
+                    '- see https://cutadapt.readthedocs.io for complete '
+                    'details.',
+        'primer_r': 'Sequence of an adapter ligated to the 3\' end. The '
+                    'adapter and any subsequent bases are trimmed. If a `$` '
+                    'is appended, the adapter is only found if it is at the '
+                    'end of the read. Search in reverse read. If your '
+                    'sequence of interest is "framed" by a 5\' and a 3\' '
+                    'adapter, use this parameter to define a "linked" primer '
+                    '- see https://cutadapt.readthedocs.io for complete '
+                    'details.'
+    },
+    output_descriptions={
+        'table_viz': 'Visualization of the demultiplexed sequences to assess read quality.'
+                     'The Dada2 truncation inputs will be determined using this visualization.'
+    },
     name='Read Quality Visualization',
     description="test"
 )
 
-
-
-
-
-
+plugin.pipelines.register_function(
+    function=actions.classify_reads,
+    inputs={'samp_reads': SampleData[PairedEndSequencesWithQuality],
+            'trained_classifier': TaxonomicClassifier
+            },
+    outputs=[('dada2_table', FeatureTable[Frequency]),
+             ('dada2_rep_seqs', FeatureData[Sequence]),
+             ('dada2_stats', SampleData[DADA2Stats]),
+             ('classified', FeatureData[Taxonomy]),
+             ('bar_viz', Visualization)
+             ],
+    parameters={
+        'trunc_len_f': Int % Range(0, None),
+        'trunc_len_r': Int % Range(0, None),
+    },
+    input_descriptions={
+        'samp_reads': 'Path to sample reads Artifact (.qza file)',
+        'trained_classifier':  'Path to trained classifier Artifact (.qza file)',
+    },
+    parameter_descriptions={
+        'trunc_len_f':   ('Position at which forward read sequences should be '
+                        'truncated due to decrease in quality. This truncates '
+                        'the 3\' end of the of the input sequences, which '
+                        'will be the bases that were sequenced in the last '
+                        'cycles. Reads that are shorter than this value '
+                        'will be discarded. After this parameter is applied '
+                        'there must still be at least a 12 nucleotide overlap '
+                        'between the forward and reverse reads. If 0 is '
+                        'provided, no truncation or length filtering will be '
+                        'performed'),
+        'trunc_len_r': ('Position at which reverse read sequences should be '
+                        'truncated due to decrease in quality. This truncates '
+                        'the 3\' end of the of the input sequences, which '
+                        'will be the bases that were sequenced in the last '
+                        'cycles. Reads that are shorter than this value '
+                        'will be discarded. After this parameter is applied '
+                        'there must still be at least a 12 nucleotide overlap '
+                        'between the forward and reverse reads. If 0 is '
+                        'provided, no truncation or length filtering will be '
+                        'performed')
+    },
+    output_descriptions={
+        'dada2_table': 'The resulting feature table.',
+        'dada2_rep_seqs': 'The resulting feature sequences. Each '
+                          'feature in the feature table will be '
+                          'represented by exactly one sequence.',
+        'dada2_stats': 'Stats on Dada2 clustering and filtering',
+        'classified': 'Resulting Taxonomic Artifact from the classification',
+        'bar_viz': 'visualization'
+    },
+    name='Classify Reads',
+    description="Using a trained classifier to classify unknown reads"
+)

@@ -13,6 +13,7 @@
 #   limitations under the License.
 
 import qiime2
+from qiime2.sdk import Results
 from qiime2.core.type.primitive import Str
 from q2_types.sample_data import SampleData
 import os
@@ -69,8 +70,8 @@ def create_classifier(ctx,
                                            view_type=None)
 
     ref_tax = qiime2.Artifact.import_data(type='FeatureData[Taxonomy]',
-                                           view=ref_tax_file,
-                                           view_type='HeaderlessTSVTaxonomyFormat')
+                                          view=ref_tax_file,
+                                          view_type='HeaderlessTSVTaxonomyFormat')
 
     trimmed_refs = extract_refs(sequences=ref_seqs,
                                 f_primer=f_primer,
@@ -87,20 +88,51 @@ def create_classifier(ctx,
     return tuple(results)
 
 
-def prep_sequence_reads(ctx, manifest_file_path):
+def prep_sequence_reads(ctx, manifest_file_path, primer_f, primer_r):
     results = []
 
     cut_adapt = ctx.get_action('cutadapt', 'trim_paired')
     create_table_viz = ctx.get_action('demux', 'summarize')
 
     read_seqs = qiime2.Artifact.import_data(type='SampleData[PairedEndSequencesWithQuality]',
-                                view = manifest_file_path,
-                                view_type = 'PairedEndFastqManifestPhred33V2')
+                                            view=manifest_file_path,
+                                            view_type='PairedEndFastqManifestPhred33V2')
 
-    trimmed_reads = cut_adapt(demultiplexed_sequences=read_seqs)
+    trimmed_reads = cut_adapt(demultiplexed_sequences=read_seqs, adapter_f=primer_f, adapter_r=primer_r)
     table_viz = create_table_viz(data=trimmed_reads.trimmed_sequences)
 
     results += table_viz
 
     return tuple(results)
 
+
+def classify_reads(ctx, samp_reads, trunc_len_f, trunc_len_r, trained_classifier):
+    results = []
+
+    # actions
+    dada2 = ctx.get_action('dada2', 'denoise_paired')
+    classify = ctx.get_action('feature_classifier', 'classify_sklearn')
+
+    # visualizations
+    barplot = ctx.get_action('taxa', 'barplot')
+    trans_table = ctx.get_action('feature_table', 'transpose')
+    comb_table = ctx.get_action('metadata', 'tabulate')
+
+    dada2_table, dada2_rep_seqs, dada2_stats = dada2(demultiplexed_seqs=samp_reads,
+                                                     trunc_len_f=trunc_len_f,
+                                                     trunc_len_r=trunc_len_r
+                                                     )
+
+    classified, = classify(classifier=trained_classifier, reads=dada2_rep_seqs)
+
+    bar_viz = barplot(table=dada2_table, taxonomy=classified)
+    # tt = trans_table(dada2_table)
+    # ct_out = comb_table()
+
+    results += Results(['table'], [dada2_table])
+    results += Results(['representative_sequences'], [dada2_rep_seqs])
+    results += Results(['denoising_stats'], [dada2_stats])
+    results += Results(['classification'], [classified])
+    results += bar_viz
+
+    return tuple(results)
