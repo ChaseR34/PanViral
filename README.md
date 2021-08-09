@@ -112,23 +112,9 @@ We will be using the classifier generated in part1 to classify the 5 example sam
 
 ## Preparing Sequences
 
-1. ####  Trim Sequences using bbduk
 
-   bbduk will trim off the primers by matching the supplied primer sequences to the first 30bp of the sequencing reads. The primer sequences are supplied to it via a reference file. The file can be found in the **primers** directory and the file name is ***primers.fasta***.
 
-   The trimReads.sh bash script calls bbduk for you. The script takes three arguments, <path-to-sequences-dir>, <path-to-primer-file>, and <path-to-output-dir>
-
-   ```bash
-   
-   mkdir example_sequences_trimmed
-   
-   bash ./scripts/trimReads.sh linked_sequences primers/primers.fasta example_sequences_trimmed
-   
-   #check trimmed_sequences
-   ls trimmed_sequences
-   ```
-
-2. ### Importing Sequences into Qiime2
+1. ### Importing Sequences into Qiime2
 
    1. #### Create manifest file
 
@@ -138,7 +124,7 @@ We will be using the classifier generated in part1 to classify the 5 example sam
    The make_manifest_file.sh bash script will be used to generate your manifest:
 
    ```bash
-   bash ./scripts/make_manifest_file.sh -d trimmed_sequences -o panflavi_manifest
+   bash ./scripts/make_manifest_file.sh -d example_sequences -o panflavi_manifest
    
    #check the generated manifest file
    
@@ -147,7 +133,7 @@ We will be using the classifier generated in part1 to classify the 5 example sam
 
    
 
-3. #### 	qiime2 import command
+2. #### 	qiime2 import command
 
    ```bash
    module load qiime2
@@ -159,8 +145,6 @@ We will be using the classifier generated in part1 to classify the 5 example sam
      --input-format PairedEndFastqManifestPhred33V2
    ```
 
-   
-
    1. #### Notes on inputs: 
 
       - --type: tells qiime2 what type of sequence data is being imported, e.g., single or paired end
@@ -170,8 +154,19 @@ We will be using the classifier generated in part1 to classify the 5 example sam
       - --output-path: name of output file
 
       - --input-format tells qiime2 what format the sequencing data is. See link above for more information
+   
 
       
+3. ####  Trim Sequences using q2_cutadapt
+
+         cutadapt will trim off the primers by matching the supplied primer sequences to the first 30bp of the sequencing reads.
+   ```bash
+    qiime cutadapt trim-paired \
+      --i-demultiplexed-sequences paired_end_demux_panflavi.qza \
+      --p-adapter-f TACAACATGATGGGAAAGAGAGAGAARAA \
+      --p-adapter-r GTGTCCCAKCCRGCTGTGTCATC \
+      --o-trimmed-sequences paired_end_demux_panflavi_trimmed.qza
+   ```
 
 4. ### Visualization of sequence quality
 
@@ -180,12 +175,12 @@ We will be using the classifier generated in part1 to classify the 5 example sam
    To produce the qiime2 visualization file, .qzv, use the following command:
 
    ```bash
-    qiime demux summarize \
-     --i-data paired-end-demux-panflavi.qza \
-     --o-visualization visual_output/demux_panflavi.qzv
+      qiime demux summarize \
+        --i-data paired_end_demux_panflavi_trimmed.qza \
+        --o-visualization visual_output/demux_panflavi.qzv
    ```
 
-   To visualize the .qzv file you have to visit https://view.qiime2.org/
+            To visualize the .qzv file you have to visit https://view.qiime2.org/
 
    
 
@@ -197,7 +192,7 @@ We will be using the classifier generated in part1 to classify the 5 example sam
 
       ```
       qiime dada2 denoise-paired \
-           --i-demultiplexed-seqs paired_end_demux_panflavi.qza \
+           --i-demultiplexed-seqs paired_end_demux_panflavi_trimmed.qza \
            --p-trim-left-f 0 \
            --p-trim-left-r 0 \
            --p-trunc-len-f 245 \

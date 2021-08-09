@@ -98,7 +98,7 @@ def prep_sequence_reads(ctx, manifest_file_path, primer_f, primer_r):
                                             view=manifest_file_path,
                                             view_type='PairedEndFastqManifestPhred33V2')
 
-    trimmed_reads = cut_adapt(demultiplexed_sequences=read_seqs, adapter_f=primer_f, adapter_r=primer_r)
+    trimmed_reads = cut_adapt(demultiplexed_sequences=read_seqs, adapter_f=[primer_f], adapter_r=[primer_r])
     table_viz = create_table_viz(data=trimmed_reads.trimmed_sequences)
 
     results += table_viz
