@@ -175,7 +175,12 @@ We will be using the classifier generated in part1 to classify the 5 example sam
    To produce the qiime2 visualization file, .qzv, use the following command:
 
    ```bash
-      qiime demux summarize \
+   #make directory to store visualizations
+   
+   mkdir visual_output
+   
+   #creating visualization   
+   qiime demux summarize \
         --i-data paired_end_demux_panflavi_trimmed.qza \
         --o-visualization visual_output/demux_panflavi.qzv
    ```
