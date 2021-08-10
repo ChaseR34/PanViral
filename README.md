@@ -163,8 +163,8 @@ We will be using the classifier generated in part1 to classify the 5 example sam
    ```bash
     qiime cutadapt trim-paired \
       --i-demultiplexed-sequences paired_end_demux_panflavi.qza \
-      --p-adapter-f TACAACATGATGGGAAAGAGAGAGAARAA \
-      --p-adapter-r GTGTCCCAKCCRGCTGTGTCATC \
+      --p-front-f TACAACATGATGGGAAAGAGAGAGAARAA \
+      --p-front-r GTGTCCCAKCCRGCTGTGTCATC \
       --o-trimmed-sequences paired_end_demux_panflavi_trimmed.qza
    ```
 
