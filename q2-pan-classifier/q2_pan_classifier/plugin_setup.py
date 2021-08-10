@@ -123,8 +123,7 @@ plugin.pipelines.register_function(
     outputs=[('dada2_table', FeatureTable[Frequency]),
              ('dada2_rep_seqs', FeatureData[Sequence]),
              ('dada2_stats', SampleData[DADA2Stats]),
-             ('classified', FeatureData[Taxonomy]),
-             ('bar_viz', Visualization)
+             ('classified', FeatureData[Taxonomy])
              ],
     parameters={
         'trunc_len_f': Int % Range(0, None),
@@ -162,24 +161,18 @@ plugin.pipelines.register_function(
                           'feature in the feature table will be '
                           'represented by exactly one sequence.',
         'dada2_stats': 'Stats on Dada2 clustering and filtering',
-        'classified': 'Resulting Taxonomic Artifact from the classification',
-        'bar_viz': 'visualization'
+        'classified': 'Resulting Taxonomic Artifact from the classification'
     },
     name='Classify Reads',
     description="Using a trained classifier to classify unknown reads"
 )
 
-# plugin.visualizers.register_function(
-#     function=actions.visualization_final,
-#     inputs={'alpha_diversity': SampleData[AlphaDiversity]},
-#     parameters={'metadata': Metadata},
-#     input_descriptions={
-#         'alpha_diversity': 'Vector of alpha diversity values by sample.'
-#     },
-#     parameter_descriptions={
-#         'metadata': 'The sample metadata.'
-#     },
-#     name='Alpha diversity comparisons',
-#     description=("Visually and statistically compare groups of alpha diversity"
-#                  " values.")
-# )
+plugin.visualizers.register_function(
+    function=actions.visualization_final,
+    inputs=None,
+    parameters=None,
+    input_descriptions={},
+    parameter_descriptions={},
+    name='Final Visualization',
+    description=("Making things look like things")
+)

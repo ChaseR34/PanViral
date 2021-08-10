@@ -12,12 +12,18 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from os import path
+import pkg_resources
+import shutil
+import tempfile
+
+from jinja2 import Environment, FileSystemLoader
+
 import qiime2
 from qiime2.sdk import Results
 from qiime2.core.type.primitive import Str
 from q2_types.sample_data import SampleData
-import os
-import pkg_resources
+
 
 from q2_pan_classifier.format_types import MyStringFormat
 
@@ -113,11 +119,6 @@ def classify_reads(ctx, samp_reads, trunc_len_f, trunc_len_r, trained_classifier
     dada2 = ctx.get_action('dada2', 'denoise_paired')
     classify = ctx.get_action('feature_classifier', 'classify_sklearn')
 
-    # visualizations
-    barplot = ctx.get_action('taxa', 'barplot')
-    trans_table = ctx.get_action('feature_table', 'transpose')
-    comb_table = ctx.get_action('metadata', 'tabulate')
-
     dada2_table, dada2_rep_seqs, dada2_stats = dada2(demultiplexed_seqs=samp_reads,
                                                      trunc_len_f=trunc_len_f,
                                                      trunc_len_r=trunc_len_r
@@ -125,17 +126,22 @@ def classify_reads(ctx, samp_reads, trunc_len_f, trunc_len_r, trained_classifier
 
     classified, = classify(classifier=trained_classifier, reads=dada2_rep_seqs)
 
-    bar_viz = barplot(table=dada2_table, taxonomy=classified)
-    # tt = trans_table(dada2_table)
-    # ct_out = comb_table()
-
     results += Results(['table'], [dada2_table])
     results += Results(['representative_sequences'], [dada2_rep_seqs])
     results += Results(['denoising_stats'], [dada2_stats])
     results += Results(['classification'], [classified])
-    results += bar_viz
 
     return tuple(results)
 
 def visualization_final(output_dir: str) -> None:
-    print(output_dir)
+
+    temp_dir = tempfile.TemporaryDirectory()
+    template_data = pkg_resources.resource_filename('q2_pan_classifier', 'templates')
+    jin_env = Environment(loader=FileSystemLoader(temp_dir.name), auto_reload=True)
+    shutil.copy2(path.join(template_data, 'base.html'), temp_dir.name)
+
+    # jin_env = Environment(loader=FileSystemLoader("templates"))
+    jin_out = jin_env.get_template('base.html').render(title="This is my title")
+
+    with open(path.join(output_dir, 'index.html'), 'w') as f:
+        f.write(jin_out)
