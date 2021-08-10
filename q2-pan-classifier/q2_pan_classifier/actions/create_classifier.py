@@ -13,6 +13,8 @@
 #   limitations under the License.
 
 from os import path
+
+import pandas as pd
 import pkg_resources
 import shutil
 import tempfile
@@ -104,9 +106,10 @@ def prep_sequence_reads(ctx, manifest_file_path, primer_f, primer_r):
                                             view=manifest_file_path,
                                             view_type='PairedEndFastqManifestPhred33V2')
 
-    trimmed_reads = cut_adapt(demultiplexed_sequences=read_seqs, adapter_f=[primer_f], adapter_r=[primer_r])
+    trimmed_reads = cut_adapt(demultiplexed_sequences=read_seqs, front_f=[primer_f], front_r=[primer_r])
     table_viz = create_table_viz(data=trimmed_reads.trimmed_sequences)
 
+    results += trimmed_reads
     results += table_viz
 
     return tuple(results)
@@ -115,21 +118,39 @@ def prep_sequence_reads(ctx, manifest_file_path, primer_f, primer_r):
 def classify_reads(ctx, samp_reads, trunc_len_f, trunc_len_r, trained_classifier):
     results = []
 
-    # actions
+    # action importing
     dada2 = ctx.get_action('dada2', 'denoise_paired')
     classify = ctx.get_action('feature_classifier', 'classify_sklearn')
+    taxa_barplot = ctx.get_action('taxa', 'barplot')
+    trans_table = ctx.get_action('feature_table', 'transpose')
+    merge_tables = ctx.get_action('metadata', 'tabulate')
+    vis_test = ctx.get_action('pan_classifier', 'visualization_final')
 
+    # getting some output
     dada2_table, dada2_rep_seqs, dada2_stats = dada2(demultiplexed_seqs=samp_reads,
                                                      trunc_len_f=trunc_len_f,
                                                      trunc_len_r=trunc_len_r
                                                      )
-
     classified, = classify(classifier=trained_classifier, reads=dada2_rep_seqs)
+    barplot_taxonomy = taxa_barplot(table=dada2_table, taxonomy=classified)
 
+    # transposing table and getting metadata
+    tt, = trans_table(table=dada2_table)
+
+    tt_m = tt.view(view_type=qiime2.Metadata)
+    dr_m = dada2_rep_seqs.view(view_type=qiime2.Metadata)
+    c_m = classified.view(view_type=qiime2.Metadata)
+
+    # merging table
+    merge_table_out = merge_tables(c_m.merge(tt_m, dr_m))
+
+    # compiling results
     results += Results(['table'], [dada2_table])
     results += Results(['representative_sequences'], [dada2_rep_seqs])
     results += Results(['denoising_stats'], [dada2_stats])
     results += Results(['classification'], [classified])
+    results += barplot_taxonomy
+    results += merge_table_out
 
     return tuple(results)
 

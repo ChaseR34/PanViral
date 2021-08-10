@@ -81,7 +81,10 @@ plugin.pipelines.register_function(
 plugin.pipelines.register_function(
     function=actions.prep_sequence_reads,
     inputs=[],
-    outputs=[('table_viz', Visualization)],
+    outputs=[
+        ('trimmed_reads', SampleData[PairedEndSequencesWithQuality]),
+        ('table_viz', Visualization)
+             ],
     parameters={
         'manifest_file_path': Str,
         'primer_f': Str,
@@ -123,7 +126,9 @@ plugin.pipelines.register_function(
     outputs=[('dada2_table', FeatureTable[Frequency]),
              ('dada2_rep_seqs', FeatureData[Sequence]),
              ('dada2_stats', SampleData[DADA2Stats]),
-             ('classified', FeatureData[Taxonomy])
+             ('classified', FeatureData[Taxonomy]),
+             ('barplot_taxonomy', Visualization),
+             ('merged_table_out', Visualization)
              ],
     parameters={
         'trunc_len_f': Int % Range(0, None),
@@ -169,7 +174,9 @@ plugin.pipelines.register_function(
 
 plugin.visualizers.register_function(
     function=actions.visualization_final,
-    inputs=None,
+    inputs={
+        # 'feat_table': FeatureTable[Frequency]
+    },
     parameters=None,
     input_descriptions={},
     parameter_descriptions={},
