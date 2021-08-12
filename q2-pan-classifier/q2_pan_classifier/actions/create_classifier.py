@@ -145,10 +145,12 @@ def classify_reads(ctx, samp_reads, trunc_len_f, trunc_len_r, trained_classifier
     merge_table_out = merge_tables(c_m.merge(tt_m, dr_m))
 
     # compiling results
-    results += Results(['table'], [dada2_table])
-    results += Results(['representative_sequences'], [dada2_rep_seqs])
-    results += Results(['denoising_stats'], [dada2_stats])
-    results += Results(['classification'], [classified])
+    # results += Results(['table'], [dada2_table])
+    # results += Results(['representative_sequences'], [dada2_rep_seqs])
+    # results += Results(['denoising_stats'], [dada2_stats])
+    # results += Results(['classification'], [classified])
+
+    results += [dada2_table, dada2_rep_seqs, dada2_stats]
     results += barplot_taxonomy
     results += merge_table_out
 

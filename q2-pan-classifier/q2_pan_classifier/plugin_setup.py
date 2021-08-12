@@ -30,8 +30,9 @@ from q2_types.feature_table import FeatureTable, Frequency
 # This is the plugin object. It is what the framework will load and what an
 # interface will interact with. Basically every registration we perform will
 # involve this object in some way.
-plugin = Plugin("pan_classifier", version="0.0.1.dev",
-                website="https://github.com/ebolyen/q2-reveal")
+plugin = Plugin("pan-classifier",
+                version="0.0.1.dev",
+                website="https://github.com/ChaseR34/PanViral/q2-pan-classifier")
 
 plugin.register_semantic_types(MyString)
 plugin.register_semantic_type_to_format(MyString, MyStringDirFormat)

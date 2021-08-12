@@ -32,7 +32,7 @@ setup(
     # have look like <project_name>=<module path>:<reference>
     # A package _could_ have multiple plugins, but it would be unusual.
     entry_points={
-        'qiime2.plugins': ['pan-classifier=q2_pan_classifier.plugin_setup:plugin']
+        'qiime2.plugins': ['q2-pan-classifier=q2_pan_classifier.plugin_setup:plugin']
     },
     zip_safe=False,
 )
