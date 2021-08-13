@@ -25,21 +25,11 @@ import qiime2
 from q2_types.feature_data import FeatureData, Sequence
 
 
-def test_function() -> str:
-    # print("testing one, two, three")
-    # cool = MyStringFormat()
-    # # cool.__name__ = "Chase"
-    # with open(cool.path, 'w') as ff:
-    #     ff.write("Chase's Cool Project")
-
-    return "Chase's Cool Project"
-
-
 def generate_taxonomy(ref_seqs: FeatureData[Sequence]) -> list:
 
     ref_seqs_series = ref_seqs.view(pd.Series)
 
-    seq_names = [name.metadata['id'] for name in ref_seqs_series ]
+    seq_names = [name.metadata['id'] for name in ref_seqs_series]
 
     return seq_names
 
@@ -151,3 +141,13 @@ def visualization_final(output_dir: str) -> None:
 
     with open(path.join(output_dir, 'index.html'), 'w') as f:
         f.write(jin_out)
+
+def test_function() -> str:
+    # print("testing one, two, three")
+    # cool = MyStringFormat()
+    # # cool.__name__ = "Chase"
+    # with open(cool.path, 'w') as ff:
+    #     ff.write("Chase's Cool Project")
+
+    return "Chase's Cool Project"
+

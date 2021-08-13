@@ -13,8 +13,6 @@
 #   limitations under the License.
 
 
-import os
-
 import qiime2.plugin.model as model
 from qiime2.plugin import SemanticType
 

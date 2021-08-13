@@ -55,7 +55,7 @@ plugin.methods.register_function(
     inputs={
         'ref_seqs': FeatureData[Sequence]
     },
-    outputs=[('taxonomy', Taxonomy)],
+    outputs=[('taxonomy', FeatureData[Taxonomy])],
     parameters={},
     input_descriptions=None,
     parameter_descriptions=None,

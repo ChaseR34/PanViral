@@ -12,16 +12,9 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-
-import os
-import pkg_resources
-import qiime2
 from q2_pan_classifier.format_types import MyStringFormat
 from q2_pan_classifier.plugin_setup import plugin
-from qiime2.plugin import List
-from qiime2.plugin.model import DirectoryFormat
-from q2_types.sample_data import SampleData
-from q2_types.per_sample_sequences import PairedEndFastqManifestPhred33V2, PairedEndSequencesWithQuality, SingleLanePerSamplePairedEndFastqDirFmt
+
 from q2_types.feature_data import TSVTaxonomyFormat, FeatureData, Sequence
 
 @plugin.register_transformer
@@ -34,13 +27,14 @@ def _1(data: str) -> MyStringFormat:
 
     return cool
 
-def _2(seq_names: list) -> TSVTaxonomyFormat:
+@plugin.register_transformer
+def _2(ref_seqs: list) -> TSVTaxonomyFormat:
 
     tax_out = TSVTaxonomyFormat()
 
     with open(tax_out.path, 'w') as ff:
         ff.write('\t'.join(['FeatureID', 'taxon', '\n']))
-        for name in seq_names:
+        for name in ref_seqs:
             ff.write('\t'.join([name, 'virus', '\n']))
 
     return tax_out
