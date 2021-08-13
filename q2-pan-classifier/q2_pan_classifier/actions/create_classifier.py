@@ -22,19 +22,7 @@ import tempfile
 from jinja2 import Environment, FileSystemLoader
 
 import qiime2
-from qiime2.sdk import Results
-from qiime2.core.type.primitive import Str
-from q2_types.sample_data import SampleData
-
-
-from q2_pan_classifier.format_types import MyStringFormat
-
-from q2_types.sample_data import SampleData
-from q2_types.per_sample_sequences import PairedEndFastqManifestPhred33V2, PairedEndSequencesWithQuality, \
-    SingleLanePerSamplePairedEndFastqDirFmt
-from q2_types.feature_data import Sequence
-
-from qiime2.plugin import model
+from q2_types.feature_data import FeatureData, Sequence
 
 
 def test_function() -> str:
@@ -47,18 +35,13 @@ def test_function() -> str:
     return "Chase's Cool Project"
 
 
-def import_sequences() -> PairedEndFastqManifestPhred33V2:
-    pass
-    # directory = SingleLanePerSamplePairedEndFastqDirFmt()
-    #
-    # out.export_data(directory.path)
-    # out.save()
-    #
-    #
-    # return out
+def generate_taxonomy(ref_seqs: FeatureData[Sequence]) -> list:
 
+    ref_seqs_series = ref_seqs.view(pd.Series)
 
-# , : str, forward_primer: str, reverse_primer: str
+    seq_names = [name.metadata['id'] for name in ref_seqs_series ]
+
+    return seq_names
 
 def create_classifier(ctx,
                       ref_seqs_file,
