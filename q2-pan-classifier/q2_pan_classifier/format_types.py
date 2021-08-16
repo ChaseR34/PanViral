@@ -22,6 +22,7 @@ DNAFastaNCBI = SemanticType('DNAFastaNCBI')
 
 class DNAFastaNCBIFormatError(ValueError):
 	"""Custom error for invalid format """
+	#TODO: Finish making this error class
 
 
 
@@ -62,6 +63,7 @@ class DNAFastaNCBIFormat(model.TextFileFormat):
 
 
 	def _validate_(self, level):
+		#TODO: make validatoin function to check if ncbi taxonomic names are there
 		pass
 
 
