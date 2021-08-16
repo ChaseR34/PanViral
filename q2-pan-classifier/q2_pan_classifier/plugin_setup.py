@@ -18,7 +18,7 @@ from qiime2.plugin import Plugin, Visualization
 
 import q2_pan_classifier.actions as actions
 
-from q2_pan_classifier.format_types import MyString, MyStringFormat, MyStringDirFormat
+from q2_pan_classifier.format_types import (DNAFastaNCBI, DNAFastaNCBIFormat, DNAFastaNCBIDirFormat)
 from q2_dada2._stats import DADA2Stats
 from q2_types.sample_data import SampleData
 from q2_types.per_sample_sequences import PairedEndSequencesWithQuality
@@ -33,22 +33,11 @@ from q2_types.feature_table import FeatureTable, Frequency
 plugin = Plugin("pan_classifier", version="0.0.1.dev",
                 website="https://github.com/ebolyen/q2-reveal")
 
-plugin.register_semantic_types(MyString)
-plugin.register_semantic_type_to_format(MyString, MyStringDirFormat)
-plugin.register_formats(MyStringFormat, MyStringDirFormat)
+plugin.register_semantic_types(DNAFastaNCBI)
+plugin.register_semantic_type_to_format(DNAFastaNCBI, DNAFastaNCBIDirFormat)
+plugin.register_formats(DNAFastaNCBIFormat, DNAFastaNCBIDirFormat)
 
 importlib.import_module("q2_pan_classifier.transformers")
-
-plugin.methods.register_function(
-    function=actions.test_function,
-    inputs=None,
-    outputs=[('cool', MyString)],
-    parameters={},
-    input_descriptions=None,
-    parameter_descriptions=None,
-    name='Pan Classifier',
-    description="Creates a classifier and classifies them using machine learning"
-)
 
 plugin.methods.register_function(
     function=actions.generate_taxonomy,
