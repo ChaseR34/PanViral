@@ -30,6 +30,7 @@ def generate_taxonomy(ref_seqs: pd.Series) -> list:
 
 def create_classifier(ctx,
                       ref_seqs_file,
+                      ref_tax=None,
                       ref_tax_file=None,
                       f_primer=None,
                       r_primer=None,
@@ -47,12 +48,19 @@ def create_classifier(ctx,
                                            view=ref_seqs_file,
                                            view_type=None)
 
-    if ref_tax_file:
-        ref_tax = qiime2.Artifact.load(ref_tax_file)
+    if ref_tax and ref_tax_file:
+        raise ValueError("Please only provide ref_tax OR ref_tax_file not both")
+
+    if ref_tax:
+        ref_tax_out = ref_tax
+    elif ref_tax_file:
+        ref_tax_out = qiime2.Artifact.import_data(type='FeatureData[Taxonomy]',
+                                                  view=ref_tax_file,
+                                                  view_type=None)
     else:
-        ref_tax = qiime2.Artifact.import_data(type='FeatureData[Taxonomy]',
-                                              view=ref_seqs_file,
-                                              view_type='DNAFastaNCBIFormat')
+        ref_tax_out = qiime2.Artifact.import_data(type='FeatureData[Taxonomy]',
+                                                  view=ref_seqs_file,
+                                                  view_type='DNAFastaNCBIFormat')
 
     # using imported plugins to extract reference and train classifier
     trimmed_refs = extract_refs(sequences=ref_seqs,
@@ -62,10 +70,10 @@ def create_classifier(ctx,
                                 max_length=max_len)
 
     trained_class = train_classifier(reference_reads=trimmed_refs.reads,
-                                     reference_taxonomy=ref_tax)
+                                     reference_taxonomy=ref_tax_out)
 
     results += trimmed_refs
-    results += [ref_tax]
+    results += [ref_tax_out]
     results += trained_class
 
     return tuple(results)

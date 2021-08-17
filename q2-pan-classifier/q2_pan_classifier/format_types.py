@@ -22,11 +22,10 @@ import qiime2.core.path as qpath
 DNAFastaNCBI = SemanticType('DNAFastaNCBI')
 
 
+
 class DNAFastaNCBIFormatError(ValueError):
 	"""Custom error for invalid format """
 	#TODO: Finish making this error class
-
-
 
 class DNAFastaNCBIFormat(model.TextFileFormat):
 
@@ -70,8 +69,16 @@ class DNAFastaNCBIFormat(model.TextFileFormat):
 		handle.close()
 
 	def _validate_(self, level):
+		#fasta file check
+			# get it from DNAFASTA
+		#Check if sequence names have pipes
+		#Check if all accession numbers are valid
+			#if not raise error
+		#use model.ValidationError
 		#TODO: make validatoin function to check if ncbi taxonomic names are there
+
 		pass
+
 
 
 

@@ -52,11 +52,9 @@ plugin.methods.register_function(
     description="Creates a taxonomy from reference fasta file"
 )
 
-
-
 plugin.pipelines.register_function(
     function=actions.create_classifier,
-    inputs=[],
+    inputs={'ref_tax': FeatureData[Taxonomy]},
     outputs=[('ref_seqs', FeatureData[Sequence]),
              ('tax_ref', FeatureData[Taxonomy]),
              ('trained_classifier', TaxonomicClassifier)],

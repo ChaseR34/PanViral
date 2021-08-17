@@ -12,12 +12,10 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 import pandas as pd
-import skbio
-
 from q2_pan_classifier.format_types import DNAFastaNCBIFormat
 from q2_pan_classifier.plugin_setup import plugin
 
-from q2_types.feature_data import TSVTaxonomyFormat, FeatureData, Sequence, DNAFASTAFormat
+from q2_types.feature_data import TSVTaxonomyFormat, DNAFASTAFormat
 
 
 
@@ -49,36 +47,9 @@ def _3(ref_seqs: DNAFASTAFormat) -> TSVTaxonomyFormat:
     return tax_out
 
 
-
-# def _read_dna_fasta(path):
-#     return skbio.read(path, format='fasta', constructor=skbio.DNA)
-# #
-#
-# @plugin.register_transformer
-# def _4(ff: DNAFastaNCBIFormat) -> pd.Series:
-#     data = {}
-#     for sequence in _read_dna_fasta(str(ff)):
-#         data[sequence.metadata['id']] = sequence
-#     return pd.Series(data)
-
-
 @plugin.register_transformer
 def _4(ff: DNAFastaNCBIFormat) -> list:
     return ff.accession_numbers
-
-# @plugin.register_transformer
-# def _5(ref_seqs: DNAFastaNCBIFormat) -> TSVTaxonomyFormat:
-#
-#     seq_names = [name.metadata['id'] for name in ref_seqs.view(pd.Series)]
-#
-#     tax_out = TSVTaxonomyFormat()
-#
-#     with open(tax_out.path, 'w') as ff:
-#         ff.write('\t'.join(tax_out.HEADER) + '\n')
-#         for name in seq_names:
-#             ff.write('\t'.join([name, 'virus']) + '\n')
-#
-#     return tax_out
 
 @plugin.register_transformer
 def _5(ref_seqs: DNAFastaNCBIFormat) -> TSVTaxonomyFormat:
@@ -95,3 +66,7 @@ def _5(ref_seqs: DNAFastaNCBIFormat) -> TSVTaxonomyFormat:
             ff.write('\t'.join([name, tax]) + '\n')
 
     return tax_out
+
+#TODO Need to write tests for the transformer
+#test plugin base from qiime2.plugin
+#tests embedded in module
