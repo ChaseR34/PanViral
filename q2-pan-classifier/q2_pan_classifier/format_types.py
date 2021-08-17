@@ -13,6 +13,8 @@
 #   limitations under the License.
 
 import skbio
+from Bio import Entrez
+import re
 import qiime2.plugin.model as model
 from qiime2.plugin import SemanticType
 import qiime2.core.path as qpath
@@ -28,39 +30,44 @@ class DNAFastaNCBIFormatError(ValueError):
 
 class DNAFastaNCBIFormat(model.TextFileFormat):
 
-	def __init__(self, path: str = None, mode: str = 'w') -> None:
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
 		self.PIPE = '|'
 		self.accession_numbers = []
 		self.names = []
-
-		if path is None:
-			if mode != 'w':
-				raise ValueError("A path must be provided when reading.")
-		else:
-			if mode != 'r':
-				raise ValueError("A path must be omitted when writing.")
-
-		if mode == 'w':
-			self.path = qpath.OutPath(
-				# TODO: parents shouldn't know about their children
-				dir=isinstance(self, model.DirectoryFormat),
-				prefix='q2-%s-' % self.__class__.__name__)
-		else:
-			self.path = qpath.InPath(path)
-
-		self._mode = mode
+		self.taxonomy = []
+		self.email = "clr96@nau.edu"
+		Entrez.email = self.email
 
 	def get_accession_numbers(self) -> None:
 		samps = skbio.read(str(self), format="fasta")
 
 		for samp in samps:
 			name = samp.metadata['id']
+			self.names.append(name)
 			if self.PIPE in name:
 				a_n_tmp = name.split(self.PIPE)[1]
 				self.accession_numbers.append(a_n_tmp)
 			else:
 				self.accession_numbers.append(name)
 
+	def get_taxonomy(self, accession_numbers):
+
+		if not isinstance(accession_numbers, list):
+			accession_numbers = [accession_numbers]
+
+		handle = Entrez.efetch(db="nuccore",
+							   id=accession_numbers,
+							   rettype="gb",
+							   retmode="xml")
+		records = Entrez.read(handle)
+
+		for rec in records:
+			taxonomy = rec['GBSeq_taxonomy']
+			scientific_name = rec['GBSeq_organism']
+			self.taxonomy.append(taxonomy + "; " + scientific_name)
+
+		handle.close()
 
 	def _validate_(self, level):
 		#TODO: make validatoin function to check if ncbi taxonomic names are there

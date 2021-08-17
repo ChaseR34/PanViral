@@ -64,7 +64,7 @@ def _3(ref_seqs: DNAFASTAFormat) -> TSVTaxonomyFormat:
 
 @plugin.register_transformer
 def _4(ff: DNAFastaNCBIFormat) -> list:
-    return ff.get_accession_numbers()
+    return ff.accession_numbers
 
 # @plugin.register_transformer
 # def _5(ref_seqs: DNAFastaNCBIFormat) -> TSVTaxonomyFormat:
@@ -83,13 +83,15 @@ def _4(ff: DNAFastaNCBIFormat) -> list:
 @plugin.register_transformer
 def _5(ref_seqs: DNAFastaNCBIFormat) -> TSVTaxonomyFormat:
     ref_seqs.get_accession_numbers()
-    seq_names = ref_seqs.accession_numbers
+    ref_seqs.get_taxonomy(ref_seqs.accession_numbers)
+    seq_names = ref_seqs.names
+    seq_taxonomy = ref_seqs.taxonomy
 
     tax_out = TSVTaxonomyFormat()
 
     with open(tax_out.path, 'w') as ff:
         ff.write('\t'.join(tax_out.HEADER) + '\n')
-        for name in seq_names:
-            ff.write('\t'.join([name, 'virus_list2']) + '\n')
+        for name, tax in zip(seq_names, seq_taxonomy):
+            ff.write('\t'.join([name, tax]) + '\n')
 
     return tax_out

@@ -30,11 +30,11 @@ def generate_taxonomy(ref_seqs: pd.Series) -> list:
 
 def create_classifier(ctx,
                       ref_seqs_file,
-                      ref_tax_file,
-                      f_primer,
-                      r_primer,
-                      min_len,
-                      max_len):
+                      ref_tax_file=None,
+                      f_primer=None,
+                      r_primer=None,
+                      min_len=None,
+                      max_len=None):
 
     #importing external plugins to be used later
     extract_refs = ctx.get_action('feature_classifier', 'extract_reads')
@@ -47,9 +47,12 @@ def create_classifier(ctx,
                                            view=ref_seqs_file,
                                            view_type=None)
 
-    ref_tax = qiime2.Artifact.import_data(type='FeatureData[Taxonomy]',
-                                          view=ref_tax_file,
-                                          view_type='HeaderlessTSVTaxonomyFormat')
+    if ref_tax_file:
+        ref_tax = qiime2.Artifact.load(ref_tax_file)
+    else:
+        ref_tax = qiime2.Artifact.import_data(type='FeatureData[Taxonomy]',
+                                              view=ref_seqs_file,
+                                              view_type='DNAFastaNCBIFormat')
 
     # using imported plugins to extract reference and train classifier
     trimmed_refs = extract_refs(sequences=ref_seqs,
@@ -62,6 +65,7 @@ def create_classifier(ctx,
                                      reference_taxonomy=ref_tax)
 
     results += trimmed_refs
+    results += [ref_tax]
     results += trained_class
 
     return tuple(results)
@@ -98,7 +102,7 @@ def classify_reads(ctx, samp_reads, trunc_len_f, trunc_len_r, trained_classifier
     barplot = ctx.get_action('taxa', 'barplot')
     transpose = ctx.get_action('feature_table', 'transpose')
     tabulate = ctx.get_action('metadata', 'tabulate')
-    vis_test = ctx.get_action('pan_classifier', 'visualization_final')
+    # vis_test = ctx.get_action('pan_classifier', 'visualization_final')
 
     # getting some output
     dada2_table, dada2_rep_seqs, dada2_stats = dada2(demultiplexed_seqs=samp_reads,
@@ -118,7 +122,7 @@ def classify_reads(ctx, samp_reads, trunc_len_f, trunc_len_r, trained_classifier
     # merging table
     merge_table = tabulate(c_m.merge(tt_m, dr_m))
 
-    results += [dada2_table, dada2_rep_seqs, dada2_stats]
+    results += [dada2_table, dada2_rep_seqs, dada2_stats, classified]
     results += barplot_taxonomy
     results += merge_table
 
@@ -136,13 +140,3 @@ def visualization_final(output_dir: str) -> None:
 
     with open(path.join(output_dir, 'index.html'), 'w') as f:
         f.write(jin_out)
-
-def test_function() -> str:
-    # print("testing one, two, three")
-    # cool = MyStringFormat()
-    # # cool.__name__ = "Chase"
-    # with open(cool.path, 'w') as ff:
-    #     ff.write("Chase's Cool Project")
-
-    return "Chase's Cool Project"
-

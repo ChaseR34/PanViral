@@ -58,6 +58,7 @@ plugin.pipelines.register_function(
     function=actions.create_classifier,
     inputs=[],
     outputs=[('ref_seqs', FeatureData[Sequence]),
+             ('tax_ref', FeatureData[Taxonomy]),
              ('trained_classifier', TaxonomicClassifier)],
     parameters={
         'ref_seqs_file': Str,
@@ -82,6 +83,7 @@ plugin.pipelines.register_function(
     name='Create Classifier',
     description="test"
 )
+
 plugin.pipelines.register_function(
     function=actions.prep_sequence_reads,
     inputs=[],
