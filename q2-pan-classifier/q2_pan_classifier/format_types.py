@@ -11,76 +11,121 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+import time
 
 import skbio
 from Bio import Entrez
 import re
 import qiime2.plugin.model as model
+from q2_types.feature_data import DNAFASTAFormat
 from qiime2.plugin import SemanticType
-import qiime2.core.path as qpath
 
 DNAFastaNCBI = SemanticType('DNAFastaNCBI')
 
 
+class DNAFastaNCBIFormat(DNAFASTAFormat):
 
-class DNAFastaNCBIFormatError(ValueError):
-	"""Custom error for invalid format """
-	#TODO: Finish making this error class
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.PIPE = '|'
+        self.accession_numbers = []
+        self.names = []
+        self.taxonomy = []
+        self.email = "clr96@nau.edu"
+        Entrez.email = self.email
 
-class DNAFastaNCBIFormat(model.TextFileFormat):
+    def get_accession_numbers(self) -> None:
+        samps = skbio.read(str(self), format="fasta")
 
-	def __init__(self, *args, **kwargs):
-		super().__init__(*args, **kwargs)
-		self.PIPE = '|'
-		self.accession_numbers = []
-		self.names = []
-		self.taxonomy = []
-		self.email = "clr96@nau.edu"
-		Entrez.email = self.email
+        for samp in samps:
+            name = samp.metadata['id']
+            self.names.append(name)
+            if self.PIPE in name:
+                a_n_tmp = name.split(self.PIPE)[1]
+                self.accession_numbers.append(a_n_tmp)
+            else:
+                self.accession_numbers.append(name)
 
-	def get_accession_numbers(self) -> None:
-		samps = skbio.read(str(self), format="fasta")
+    def get_taxonomy(self):
 
-		for samp in samps:
-			name = samp.metadata['id']
-			self.names.append(name)
-			if self.PIPE in name:
-				a_n_tmp = name.split(self.PIPE)[1]
-				self.accession_numbers.append(a_n_tmp)
-			else:
-				self.accession_numbers.append(name)
+        if not self.accession_numbers:
+            raise ValueError("Missing accession numbers")
 
-	def get_taxonomy(self, accession_numbers):
+        tax_set = set()
 
-		if not isinstance(accession_numbers, list):
-			accession_numbers = [accession_numbers]
+        def _accession_number_split(sub_list_size: int = 200) -> list:
 
-		handle = Entrez.efetch(db="nuccore",
-							   id=accession_numbers,
-							   rettype="gb",
-							   retmode="xml")
-		records = Entrez.read(handle)
+            out_list = list()
+            ac_len = len(self.accession_numbers)
 
-		for rec in records:
-			taxonomy = rec['GBSeq_taxonomy']
-			scientific_name = rec['GBSeq_organism']
-			self.taxonomy.append(taxonomy + "; " + scientific_name)
+            total_count = 0
+            sublist = list()
 
-		handle.close()
+            while total_count < ac_len:
 
-	def _validate_(self, level):
-		#fasta file check
-			# get it from DNAFASTA
-		#Check if sequence names have pipes
-		#Check if all accession numbers are valid
-			#if not raise error
-		#use model.ValidationError
-		#TODO: make validatoin function to check if ncbi taxonomic names are there
+                index = 0
+                while index < sub_list_size and total_count < ac_len:
+                    sublist.append(self.accession_numbers[total_count])
+                    index += 1
+                    total_count += 1
 
-		pass
+                out_list.append(sublist.copy())
+                sublist.clear()
 
+            return out_list
 
+        def _check_set(tax_set_input: set, taxon: str) -> str:
+
+            for tax in tax_set_input:
+                if taxon in tax:
+                    return tax
+            return taxon
+
+        def _get_taxonomy(ac_numbers_subset: list):
+
+            handle = Entrez.efetch(db="nuccore",
+                                   id=ac_numbers_subset,
+                                   rettype="gb",
+                                   retmode="xml")
+            records = Entrez.read(handle)
+
+            for rec in records:
+                tax_tmp = rec['GBSeq_taxonomy']
+                tax_split = tax_tmp.split(';')
+
+                if len(tax_split) > 8:
+                    tax_tmp = ';'.join(tax_split[0:8])
+                elif len(tax_split) < 8:
+                    tax_tmp = prev_taxonomy
+                if tax_tmp in tax_set:
+                    taxonomy = tax_tmp
+                else:
+                    taxonomy = _check_set(tax_set, tax_tmp)
+
+                prev_taxonomy = taxonomy
+                tax_set.add(taxonomy)
+
+                scientific_name = rec['GBSeq_organism']
+                self.taxonomy.append(taxonomy + "; " + scientific_name)
+
+            handle.close()
+
+        accession_number_subsets = _accession_number_split()
+
+        for subset in accession_number_subsets:
+            _get_taxonomy(subset)
+            time.sleep(1)
+
+    def _validate_(self, level):
+        super()._validate_(level=level)
+
+        # fasta file check
+        # get it from DNAFASTA
+        # Check if sequence names have pipes
+        # Check if all accession numbers are valid
+        # if not raise error
+        # use model.ValidationError
+        # TODO: make validatoin function to check if ncbi taxonomic names are there
 
 
 DNAFastaNCBIDirFormat = model.SingleFileDirectoryFormat('DNAFastaNCBIDirFormat', 'taxonomy.tsv', DNAFastaNCBIFormat)
-

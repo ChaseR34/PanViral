@@ -128,7 +128,7 @@ def classify_reads(ctx, samp_reads, trunc_len_f, trunc_len_r, trained_classifier
     c_m = classified.view(view_type=qiime2.Metadata)
 
     # merging table
-    merge_table = tabulate(c_m.merge(tt_m, dr_m))
+    merge_table = tabulate(c_m.merge(dr_m, tt_m))
 
     results += [dada2_table, dada2_rep_seqs, dada2_stats, classified]
     results += barplot_taxonomy

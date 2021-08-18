@@ -54,7 +54,7 @@ def _4(ff: DNAFastaNCBIFormat) -> list:
 @plugin.register_transformer
 def _5(ref_seqs: DNAFastaNCBIFormat) -> TSVTaxonomyFormat:
     ref_seqs.get_accession_numbers()
-    ref_seqs.get_taxonomy(ref_seqs.accession_numbers)
+    ref_seqs.get_taxonomy()
     seq_names = ref_seqs.names
     seq_taxonomy = ref_seqs.taxonomy
 
