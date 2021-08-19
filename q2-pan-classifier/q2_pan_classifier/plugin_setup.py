@@ -30,7 +30,9 @@ from q2_types.feature_table import FeatureTable, Frequency
 # This is the plugin object. It is what the framework will load and what an
 # interface will interact with. Basically every registration we perform will
 # involve this object in some way.
-plugin = Plugin("pan_classifier", version="0.0.1.dev",
+plugin = Plugin(name="pan-classifier",
+                version="0.0.1.dev",
+                package="q2_pan_classifier",
                 website="https://github.com/ebolyen/q2-reveal")
 
 plugin.register_semantic_types(DNAFastaNCBI)
@@ -125,14 +127,17 @@ plugin.pipelines.register_function(
 plugin.pipelines.register_function(
     function=actions.classify_reads,
     inputs={'samp_reads': SampleData[PairedEndSequencesWithQuality],
-            'trained_classifier': TaxonomicClassifier
+            'trained_classifier': TaxonomicClassifier,
+            'dada2_table': FeatureTable[Frequency],
+            'dada2_rep_seqs': FeatureData[Sequence],
+            'dada2_stats': SampleData[DADA2Stats]
             },
-    outputs=[('dada2_table', FeatureTable[Frequency]),
-             ('dada2_rep_seqs', FeatureData[Sequence]),
-             ('dada2_stats', SampleData[DADA2Stats]),
-             ('classified', FeatureData[Taxonomy]),
+    outputs=[('classified', FeatureData[Taxonomy]),
              ('barplot_taxonomy', Visualization),
-             ('merged_table_out', Visualization)
+             ('merged_table', Visualization),
+             ('dada2_table_out', FeatureTable[Frequency]),
+             ('dada2_rep_seqs_out', FeatureData[Sequence]),
+             ('dada2_stats_out', SampleData[DADA2Stats])
              ],
     parameters={
         'trunc_len_f': Int % Range(0, None),
@@ -165,11 +170,11 @@ plugin.pipelines.register_function(
                         'performed')
     },
     output_descriptions={
-        'dada2_table': 'The resulting feature table.',
-        'dada2_rep_seqs': 'The resulting feature sequences. Each '
+        'dada2_table_out': 'The resulting feature table.',
+        'dada2_rep_seqs_out': 'The resulting feature sequences. Each '
                           'feature in the feature table will be '
                           'represented by exactly one sequence.',
-        'dada2_stats': 'Stats on Dada2 clustering and filtering',
+        'dada2_stats_out': 'Stats on Dada2 clustering and filtering',
         'classified': 'Resulting Taxonomic Artifact from the classification'
     },
     name='Classify Reads',

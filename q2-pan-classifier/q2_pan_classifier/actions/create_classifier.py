@@ -64,11 +64,16 @@ def create_classifier(ctx,
 
     # using imported plugins to extract reference and train classifier
     if f_primer and r_primer:
-        trimmed_refs = extract_refs(sequences=ref_seqs,
-                                    f_primer=f_primer,
-                                    r_primer=r_primer,
-                                    min_length=min_len,
-                                    max_length=max_len)
+        if min_len and max_len:
+            trimmed_refs = extract_refs(sequences=ref_seqs,
+                                        f_primer=f_primer,
+                                        r_primer=r_primer,
+                                        min_length=min_len,
+                                        max_length=max_len)
+        else:
+            trimmed_refs = extract_refs(sequences=ref_seqs,
+                                        f_primer=f_primer,
+                                        r_primer=r_primer)
 
         trained_class = train_classifier(reference_reads=trimmed_refs.reads,
                                          reference_taxonomy=ref_tax_out)
@@ -85,7 +90,7 @@ def create_classifier(ctx,
     return tuple(results)
 
 
-def prep_sequence_reads(ctx, manifest_file_path, primer_f, primer_r):
+def prep_sequence_reads(ctx, manifest_file_path, primer_f=None, primer_r=None):
     results = []
 
     # importing external plugins to be used later
@@ -107,7 +112,8 @@ def prep_sequence_reads(ctx, manifest_file_path, primer_f, primer_r):
     return tuple(results)
 
 
-def classify_reads(ctx, samp_reads, trunc_len_f, trunc_len_r, trained_classifier):
+def classify_reads(ctx, samp_reads, trunc_len_f, trunc_len_r, trained_classifier,
+                   dada2_table=None, dada2_rep_seqs=None, dada2_stats=None):
     results = []
 
     # action importing
@@ -116,18 +122,24 @@ def classify_reads(ctx, samp_reads, trunc_len_f, trunc_len_r, trained_classifier
     barplot = ctx.get_action('taxa', 'barplot')
     transpose = ctx.get_action('feature_table', 'transpose')
     tabulate = ctx.get_action('metadata', 'tabulate')
-    # vis_test = ctx.get_action('pan_classifier', 'visualization_final')
+    vis_test = ctx.get_action('pan_classifier', 'visualization_final')
 
     # getting some output
-    dada2_table, dada2_rep_seqs, dada2_stats = dada2(demultiplexed_seqs=samp_reads,
-                                                     trunc_len_f=trunc_len_f,
-                                                     trunc_len_r=trunc_len_r
-                                                     )
-    classified, = classify_sklearn(classifier=trained_classifier, reads=dada2_rep_seqs)
-    barplot_taxonomy = barplot(table=dada2_table, taxonomy=classified)
+
+    if dada2_table and dada2_rep_seqs and dada2_stats:
+        dada2_table_out = dada2_table
+        dada2_rep_seqs_out = dada2_rep_seqs
+        dada2_stats_out = dada2_stats
+    else:
+        dada2_table_out, dada2_rep_seqs_out, dada2_stats_out = dada2(demultiplexed_seqs=samp_reads,
+                                                                     trunc_len_f=trunc_len_f,
+                                                                     trunc_len_r=trunc_len_r
+                                                                     )
+    classified, = classify_sklearn(classifier=trained_classifier, reads=dada2_rep_seqs_out)
+    barplot_taxonomy = barplot(table=dada2_table_out, taxonomy=classified)
 
     # transposing table and getting metadata
-    tt, = transpose(table=dada2_table)
+    tt, = transpose(table=dada2_table_out)
 
     tt_m = tt.view(view_type=qiime2.Metadata)
     dr_m = dada2_rep_seqs.view(view_type=qiime2.Metadata)
@@ -136,9 +148,10 @@ def classify_reads(ctx, samp_reads, trunc_len_f, trunc_len_r, trained_classifier
     # merging table
     merge_table = tabulate(c_m.merge(dr_m, tt_m))
 
-    results += [dada2_table, dada2_rep_seqs, dada2_stats, classified]
+    results += [classified]
     results += barplot_taxonomy
     results += merge_table
+    results += [dada2_table_out, dada2_rep_seqs_out, dada2_stats_out]
 
     return tuple(results)
 
