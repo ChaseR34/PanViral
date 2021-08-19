@@ -40,11 +40,15 @@ class DNAFastaNCBIFormat(DNAFASTAFormat):
         for samp in samps:
             name = samp.metadata['id']
             self.names.append(name)
-            if self.PIPE in name:
+            if "gb:" and self.PIPE in name:
+                a_n_tmp = name.split(":")[1].split(self.PIPE)[0]
+                self.accession_numbers.append(a_n_tmp)
+            elif self.PIPE in name:
                 a_n_tmp = name.split(self.PIPE)[1]
                 self.accession_numbers.append(a_n_tmp)
             else:
-                self.accession_numbers.append(name)
+                a_n_tmp = name.split(" ")[0]
+                self.accession_numbers.append(a_n_tmp)
 
     def get_taxonomy(self):
 
@@ -53,7 +57,7 @@ class DNAFastaNCBIFormat(DNAFASTAFormat):
 
         tax_set = set()
 
-        def _accession_number_split(sub_list_size: int = 200) -> list:
+        def _accession_number_split(sub_list_size: int = 100) -> list:
 
             out_list = list()
             ac_len = len(self.accession_numbers)

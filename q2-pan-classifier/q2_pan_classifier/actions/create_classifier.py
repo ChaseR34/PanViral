@@ -63,16 +63,22 @@ def create_classifier(ctx,
                                                   view_type='DNAFastaNCBIFormat')
 
     # using imported plugins to extract reference and train classifier
-    trimmed_refs = extract_refs(sequences=ref_seqs,
-                                f_primer=f_primer,
-                                r_primer=r_primer,
-                                min_length=min_len,
-                                max_length=max_len)
+    if f_primer and r_primer:
+        trimmed_refs = extract_refs(sequences=ref_seqs,
+                                    f_primer=f_primer,
+                                    r_primer=r_primer,
+                                    min_length=min_len,
+                                    max_length=max_len)
 
-    trained_class = train_classifier(reference_reads=trimmed_refs.reads,
-                                     reference_taxonomy=ref_tax_out)
+        trained_class = train_classifier(reference_reads=trimmed_refs.reads,
+                                         reference_taxonomy=ref_tax_out)
+        results += trimmed_refs
+    else:
+        trained_class = train_classifier(reference_reads=ref_seqs,
+                                         reference_taxonomy=ref_tax_out)
+        results += [ref_seqs]
 
-    results += trimmed_refs
+
     results += [ref_tax_out]
     results += trained_class
 
