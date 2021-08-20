@@ -18,7 +18,7 @@ def _return_names_(file_path_names: list) -> list:
             names_out.append(name_split[0])
     return names_out
 
-def _generate_manifest_file_(sample_dir_path: str, manifest_file_dir: str) -> str:
+def _generate_manifest_file_(sample_dir_path: str, manifest_file_dir: str) -> tuple:
     """Generates a manifest file in a temporary directory to be used in sequence reads upload"""
 
     HEADER = ['sample-id', 'forward-absolute-filepath', 'reverse-absolute-filepath']
@@ -44,10 +44,17 @@ def _generate_manifest_file_(sample_dir_path: str, manifest_file_dir: str) -> st
 
             manifest_file.write('\t'.join(out) + '\n')
 
-    return os.path.join(manifest_file_dir, "manifest")
+    return tuple([os.path.join(manifest_file_dir, "manifest"), names])
 
 
-def prep_sequence_reads(ctx, sequences_directory, primer_f=None, primer_r=None):
+def _write_metadata_template_(sample_names: list, output_dir: str ) -> None:
+    HEADER = "sample-id"
+    with open(os.path.join(output_dir, "metadata_template.tsv"), "w") as metadata_file:
+        metadata_file.write(HEADER + '\n')
+        metadata_file.write('\n'.join(sample_names))
+
+
+def prep_sequence_reads(ctx, sequences_directory, output_dir, primer_f=None, primer_r=None):
     results = []
     sequences_directory = os.path.abspath(sequences_directory)
 
@@ -59,11 +66,14 @@ def prep_sequence_reads(ctx, sequences_directory, primer_f=None, primer_r=None):
 
     temp_dir = tempfile.TemporaryDirectory()
 
-    manifest_file_path = _generate_manifest_file_(sequences_directory, temp_dir.name)
+    manifest_file_path, names = _generate_manifest_file_(sequences_directory, temp_dir.name)
 
     read_seqs = qiime2.Artifact.import_data(type='SampleData[PairedEndSequencesWithQuality]',
                                             view=manifest_file_path,
                                             view_type='PairedEndFastqManifestPhred33V2')
+    #write metadata template
+    _write_metadata_template_(sample_names=names, output_dir=output_dir)
+
 
     # using plugins to trim reads and create reads visualization
     trimmed_reads = cut_adapt(demultiplexed_sequences=read_seqs, front_f=[primer_f], front_r=[primer_r])
