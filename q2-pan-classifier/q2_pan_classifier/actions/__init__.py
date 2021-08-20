@@ -12,8 +12,10 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from q2_pan_classifier.actions.create_classifier import (create_classifier, prep_sequence_reads,
-                                                         classify_reads, visualization_final, generate_taxonomy)
+from q2_pan_classifier.actions.create_classifier import (create_classifier, generate_taxonomy)
+
+from q2_pan_classifier.actions.prep_sequences import (prep_sequence_reads)
+from q2_pan_classifier.actions.classify_reads import (classify_reads, visualization_final)
 
 
 # Good practice is to explicitely mark what is "available" for
