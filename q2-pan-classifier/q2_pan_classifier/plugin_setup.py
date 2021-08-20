@@ -92,13 +92,13 @@ plugin.pipelines.register_function(
         ('table_viz', Visualization)
              ],
     parameters={
-        'manifest_file_path': Str,
+        'sequences_directory': Str,
         'primer_f': Str,
         'primer_r': Str
     },
     input_descriptions=None,
     parameter_descriptions={
-        'manifest_file_path': 'Path to manifest file',
+        'sequences_directory': 'Path to sequences directory',
         'primer_f': 'Sequence of an adapter ligated to the 3\' end. The '
                     'adapter and any subsequent bases are trimmed. If a `$` '
                     'is appended, the adapter is only found if it is at the '
