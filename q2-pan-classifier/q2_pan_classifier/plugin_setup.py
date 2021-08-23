@@ -86,13 +86,14 @@ plugin.pipelines.register_function(
 
 plugin.pipelines.register_function(
     function=actions.prep_sequence_reads,
-    inputs=[],
+    inputs={},
     outputs=[
         ('trimmed_reads', SampleData[PairedEndSequencesWithQuality]),
         ('table_viz', Visualization)
              ],
     parameters={
         'sequences_directory': Str,
+        'metadata_template_dir': Str,
         'primer_f': Str,
         'primer_r': Str
     },
