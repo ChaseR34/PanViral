@@ -93,6 +93,7 @@ plugin.pipelines.register_function(
              ],
     parameters={
         'sequences_directory': Str,
+        'metadata_template_dir': Str,
         'primer_f': Str,
         'primer_r': Str
     },

@@ -9,13 +9,16 @@ def _return_names_(file_path_names: list) -> list:
     names_out = list()
 
     for name in names_raw:
-        name_split = name.split('-')
-        name_1_len = len(name_split[0])
+        if '-' in name:
+            name_split = name.split('-')
+            name_1_len = len(name_split[0])
 
-        if name_1_len < 8:
-            names_out.append(name_split[1])
+            if name_1_len < 8:
+                names_out.append(name_split[1])
+            else:
+                names_out.append(name_split[0])
         else:
-            names_out.append(name_split[0])
+            names_out = name.split('_')[0]
     return names_out
 
 def _generate_manifest_file_(sample_dir_path: str, manifest_file_dir: str) -> tuple:
@@ -49,12 +52,19 @@ def _generate_manifest_file_(sample_dir_path: str, manifest_file_dir: str) -> tu
 
 def _write_metadata_template_(sample_names: list, output_dir: str ) -> None:
     HEADER = "sample-id"
+
+    if output_dir and not os.path.isdir(output_dir):
+        os.mkdir(output_dir)
+
+    elif not output_dir:
+        output_dir = os.getcwd()
+
     with open(os.path.join(output_dir, "metadata_template.tsv"), "w") as metadata_file:
         metadata_file.write(HEADER + '\n')
         metadata_file.write('\n'.join(sample_names))
 
 
-def prep_sequence_reads(ctx, sequences_directory, output_dir, primer_f=None, primer_r=None):
+def prep_sequence_reads(ctx, sequences_directory, metadata_template_dir=None, primer_f=None, primer_r=None):
     results = []
     sequences_directory = os.path.abspath(sequences_directory)
 
@@ -72,14 +82,20 @@ def prep_sequence_reads(ctx, sequences_directory, output_dir, primer_f=None, pri
                                             view=manifest_file_path,
                                             view_type='PairedEndFastqManifestPhred33V2')
     #write metadata template
-    _write_metadata_template_(sample_names=names, output_dir=output_dir)
+    _write_metadata_template_(sample_names=names, output_dir=metadata_template_dir)
 
 
     # using plugins to trim reads and create reads visualization
-    trimmed_reads = cut_adapt(demultiplexed_sequences=read_seqs, front_f=[primer_f], front_r=[primer_r])
-    table_viz = create_table_viz(data=trimmed_reads.trimmed_sequences)
 
-    results += trimmed_reads
+    if primer_f and primer_r:
+        trimmed_reads = cut_adapt(demultiplexed_sequences=read_seqs, front_f=[primer_f], front_r=[primer_r])
+        table_viz = create_table_viz(data=trimmed_reads.trimmed_sequences)
+
+        results += trimmed_reads
+    else:
+        table_viz = create_table_viz(data=read_seqs.trimmed_sequences)
+        results += [read_seqs]
+
     results += table_viz
 
     return tuple(results)
