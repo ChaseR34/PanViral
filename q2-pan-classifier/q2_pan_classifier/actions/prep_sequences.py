@@ -18,8 +18,7 @@ def _return_names_(file_path_names: list) -> list:
             else:
                 names_out.append(name_split[0])
         else:
-            names_split = name.split('_')
-            names_out.append(names_split[0])
+            names_out = name.split('_')[0]
     return names_out
 
 def _generate_manifest_file_(sample_dir_path: str, manifest_file_dir: str) -> tuple:
@@ -51,13 +50,13 @@ def _generate_manifest_file_(sample_dir_path: str, manifest_file_dir: str) -> tu
     return tuple([os.path.join(manifest_file_dir, "manifest"), names])
 
 
-def _write_metadata_template_(sample_names: list, output_dir: str = None) -> None:
-    """ creates a metatdata file template to be added to by the user for later statistics and visualizations"""
+def _write_metadata_template_(sample_names: list, output_dir: str ) -> None:
     HEADER = "sample-id"
 
-    if output_dir:
-        os.makedirs(output_dir)
-    else:
+    if output_dir and not os.path.isdir(output_dir):
+        os.mkdir(output_dir)
+
+    elif not output_dir:
         output_dir = os.getcwd()
 
     with open(os.path.join(output_dir, "metadata_template.tsv"), "w") as metadata_file:
@@ -83,16 +82,20 @@ def prep_sequence_reads(ctx, sequences_directory, metadata_template_dir=None, pr
                                             view=manifest_file_path,
                                             view_type='PairedEndFastqManifestPhred33V2')
     #write metadata template
-    #TODO Ask Evan how to adcess the output_dir variable so this can be saved into the same folder
-
     _write_metadata_template_(sample_names=names, output_dir=metadata_template_dir)
 
 
     # using plugins to trim reads and create reads visualization
-    trimmed_reads = cut_adapt(demultiplexed_sequences=read_seqs, front_f=[primer_f], front_r=[primer_r])
-    table_viz = create_table_viz(data=trimmed_reads.trimmed_sequences)
 
-    results += trimmed_reads
+    if primer_f and primer_r:
+        trimmed_reads = cut_adapt(demultiplexed_sequences=read_seqs, front_f=[primer_f], front_r=[primer_r])
+        table_viz = create_table_viz(data=trimmed_reads.trimmed_sequences)
+
+        results += trimmed_reads
+    else:
+        table_viz = create_table_viz(data=read_seqs.trimmed_sequences)
+        results += [read_seqs]
+
     results += table_viz
 
     return tuple(results)
