@@ -73,10 +73,11 @@ def create_classifier(ctx,
                                          reference_taxonomy=ref_tax_out)
         results += trimmed_refs
     else:
+        print(ref_seqs)
+        print(ref_tax_out)
         trained_class = train_classifier(reference_reads=ref_seqs,
                                          reference_taxonomy=ref_tax_out)
         results += [ref_seqs]
-
 
     results += [ref_tax_out]
     results += trained_class
