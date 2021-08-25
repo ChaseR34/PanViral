@@ -12,16 +12,81 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 import time
+import pkg_resources
 
 import skbio
 from Bio import Entrez
-import re
+import pandas as pd
 import qiime2.plugin.model as model
 from q2_types.feature_data import DNAFASTAFormat
 from qiime2.plugin import SemanticType
 
 DNAFastaNCBI = SemanticType('DNAFastaNCBI')
 
+
+def _accession_number_split_(accession_numbers: list, sub_list_size: int = 100) -> list:
+    out_list = list()
+    ac_len = len(accession_numbers)
+
+    total_count = 0
+    sublist = list()
+
+    while total_count < ac_len:
+
+        index = 0
+        while index < sub_list_size and total_count < ac_len:
+            sublist.append(accession_numbers[total_count])
+            index += 1
+            total_count += 1
+
+        out_list.append(sublist.copy())
+        sublist.clear()
+
+    return out_list
+
+
+def _find_tax_(tax_df_input: pd.DataFrame, taxon: str) -> int:
+
+    genus = tax_df_input["Genus"]
+    if genus.str.contains(taxon).any():
+        index = genus.index[genus.str.contains(taxon) == True][0]
+    else:
+        index = -1
+
+    return index
+
+
+def _get_taxonomy_(ac_numbers_subset: list, tax_df: pd.DataFrame) -> list:
+    names = ["Unranked", "Realm", "Kingdom", "Phylum", "Class", "Order", "Family", "Genus"]
+    taxonomy = []
+    handle = Entrez.efetch(db="nuccore",
+                           id=ac_numbers_subset,
+                           rettype="gb",
+                           retmode="xml")
+    records = Entrez.read(handle)
+
+
+    for rec in records:
+        tax_tmp = rec['GBSeq_taxonomy']
+        tax_split = tax_tmp.split(';')
+        scientific_name = rec['GBSeq_organism']
+
+
+        for tax_level in reversed(tax_split):
+            index = _find_tax_(tax_df, tax_level.strip())
+
+            if not index == -1:
+                tax_raw = tax_df.loc[index, names]
+                tax_list = tax_raw.to_list()
+
+                tax_str = ";".join(tax_list)
+
+                taxonomy.append(tax_str + ';' + scientific_name)
+                break
+
+    handle.close()
+
+    return taxonomy
 
 class DNAFastaNCBIFormat(DNAFASTAFormat):
 
@@ -38,16 +103,19 @@ class DNAFastaNCBIFormat(DNAFASTAFormat):
         samps = skbio.read(str(self), format="fasta")
 
         for samp in samps:
+
             name = samp.metadata['id']
-            self.names.append(name)
-            if "gb:" and self.PIPE in name:
+            print(name)
+            self.names.append(name.strip())
+
+            if "gb:" in name and self.PIPE in name:
                 a_n_tmp = name.split(":")[1].split(self.PIPE)[0]
                 self.accession_numbers.append(a_n_tmp)
             elif self.PIPE in name:
                 a_n_tmp = name.split(self.PIPE)[1]
                 self.accession_numbers.append(a_n_tmp)
             else:
-                a_n_tmp = name.split(" ")[0]
+                a_n_tmp = name.split("-")[0]
                 self.accession_numbers.append(a_n_tmp)
 
     def get_taxonomy(self):
@@ -55,69 +123,15 @@ class DNAFastaNCBIFormat(DNAFASTAFormat):
         if not self.accession_numbers:
             raise ValueError("Missing accession numbers")
 
-        tax_set = set()
+        taxonomy_reference_csv = pkg_resources.resource_filename('q2_pan_classifier', 'data/ViralTaxonomy.csv')
 
-        def _accession_number_split(sub_list_size: int = 100) -> list:
+        tax_df = pd.read_csv(taxonomy_reference_csv)
 
-            out_list = list()
-            ac_len = len(self.accession_numbers)
-
-            total_count = 0
-            sublist = list()
-
-            while total_count < ac_len:
-
-                index = 0
-                while index < sub_list_size and total_count < ac_len:
-                    sublist.append(self.accession_numbers[total_count])
-                    index += 1
-                    total_count += 1
-
-                out_list.append(sublist.copy())
-                sublist.clear()
-
-            return out_list
-
-        def _check_set(tax_set_input: set, taxon: str) -> str:
-
-            for tax in tax_set_input:
-                if taxon in tax:
-                    return tax
-            return taxon
-
-        def _get_taxonomy(ac_numbers_subset: list):
-
-            handle = Entrez.efetch(db="nuccore",
-                                   id=ac_numbers_subset,
-                                   rettype="gb",
-                                   retmode="xml")
-            records = Entrez.read(handle)
-
-            for rec in records:
-                tax_tmp = rec['GBSeq_taxonomy']
-                tax_split = tax_tmp.split(';')
-
-                if len(tax_split) > 8:
-                    tax_tmp = ';'.join(tax_split[0:8])
-                elif len(tax_split) < 8:
-                    tax_tmp = prev_taxonomy
-                if tax_tmp in tax_set:
-                    taxonomy = tax_tmp
-                else:
-                    taxonomy = _check_set(tax_set, tax_tmp)
-
-                prev_taxonomy = taxonomy
-                tax_set.add(taxonomy)
-
-                scientific_name = rec['GBSeq_organism']
-                self.taxonomy.append(taxonomy + "; " + scientific_name)
-
-            handle.close()
-
-        accession_number_subsets = _accession_number_split()
+        accession_number_subsets = _accession_number_split_(self.accession_numbers)
 
         for subset in accession_number_subsets:
-            _get_taxonomy(subset)
+            taxonomy = _get_taxonomy_(subset, tax_df)
+            self.taxonomy = taxonomy
             time.sleep(1)
 
     def _validate_(self, level):
