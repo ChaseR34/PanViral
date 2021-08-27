@@ -1,10 +1,29 @@
 import os
 from os import path, cpu_count
 
+import pandas as pd
 import pkg_resources
 from jinja2 import Environment, FileSystemLoader
 
 import qiime2
+
+
+
+def _merge_table_(transpose, dada2_table_out, dada2_rep_seqs_out, classified ):
+    # transposing table and getting metadata
+    tt, = transpose(table=dada2_table_out)
+    tt_dt = tt.view(pd.DataFrame)
+    tt_dt["Total"] = tt_dt.sum(axis=1)
+    tt_dt.index.name = "feature id"
+
+    tt_m = qiime2.Metadata(tt_dt)
+    dr_m = dada2_rep_seqs_out.view(view_type=qiime2.Metadata)
+    c_m = classified.view(view_type=qiime2.Metadata)
+
+    merged_table = c_m.merge(dr_m, tt_m)
+
+    return merged_table
+
 
 def classify_reads(ctx, samp_reads, trunc_len_f, trunc_len_r, trained_classifier,
                    dada2_table=None, dada2_rep_seqs=None, dada2_stats=None):
@@ -34,19 +53,12 @@ def classify_reads(ctx, samp_reads, trunc_len_f, trunc_len_r, trained_classifier
     classified, = classify_sklearn(classifier=trained_classifier, reads=dada2_rep_seqs_out)
     barplot_taxonomy = barplot(table=dada2_table_out, taxonomy=classified)
 
-    # transposing table and getting metadata
-    tt, = transpose(table=dada2_table_out)
-
-    tt_m = tt.view(view_type=qiime2.Metadata)
-    dr_m = dada2_rep_seqs_out.view(view_type=qiime2.Metadata)
-    c_m = classified.view(view_type=qiime2.Metadata)
-
-    # merging table
-    merge_table = tabulate(c_m.merge(dr_m, tt_m))
+    merged_table = _merge_table_(transpose, dada2_table_out, dada2_rep_seqs_out, classified )
+    tabulated_table = tabulate(merged_table)
 
     results += [classified]
     results += barplot_taxonomy
-    results += merge_table
+    results += tabulated_table
     results += [dada2_table_out, dada2_rep_seqs_out, dada2_stats_out]
 
     return tuple(results)
