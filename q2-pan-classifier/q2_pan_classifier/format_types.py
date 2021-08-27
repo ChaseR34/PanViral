@@ -23,6 +23,20 @@ from qiime2.plugin import SemanticType
 
 DNAFastaNCBI = SemanticType('DNAFastaNCBI')
 
+class EntrezFetch:
+    def __init__(self, email, db, ids, rettype, retmode):
+        Entrez.email = email
+        self.handle = Entrez.efetch(db=db,
+                               id=ids,
+                               rettype=rettype,
+                               retmode=retmode)
+
+    def __enter__(self):
+        records = Entrez.read(self.handle)
+        return records
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.handle.close()
 
 def _accession_number_split_(accession_numbers: list, sub_list_size: int = 100) -> list:
     out_list = list()
@@ -56,35 +70,29 @@ def _find_tax_(tax_df_input: pd.DataFrame, taxon: str) -> int:
     return index
 
 
-def _get_taxonomy_(ac_numbers_subset: list, tax_df: pd.DataFrame) -> list:
+def _get_taxonomy_(ac_numbers_subset: list, tax_df: pd.DataFrame, email: str) -> list:
     names = ["Unranked", "Realm", "Kingdom", "Phylum", "Class", "Order", "Family", "Genus"]
     taxonomy = []
-    handle = Entrez.efetch(db="nuccore",
-                           id=ac_numbers_subset,
-                           rettype="gb",
-                           retmode="xml")
-    records = Entrez.read(handle)
+
+    with EntrezFetch(email=email, db="nuccore", ids=ac_numbers_subset, rettype="gb", retmode="xml") as records:
+
+        for rec in records:
+            tax_tmp = rec['GBSeq_taxonomy']
+            tax_split = tax_tmp.split(';')
+            scientific_name = rec['GBSeq_organism']
 
 
-    for rec in records:
-        tax_tmp = rec['GBSeq_taxonomy']
-        tax_split = tax_tmp.split(';')
-        scientific_name = rec['GBSeq_organism']
+            for tax_level in reversed(tax_split):
+                index = _find_tax_(tax_df, tax_level.strip())
 
+                if not index == -1:
+                    tax_raw = tax_df.loc[index, names]
+                    tax_list = tax_raw.to_list()
 
-        for tax_level in reversed(tax_split):
-            index = _find_tax_(tax_df, tax_level.strip())
+                    tax_str = ";".join(tax_list)
 
-            if not index == -1:
-                tax_raw = tax_df.loc[index, names]
-                tax_list = tax_raw.to_list()
-
-                tax_str = ";".join(tax_list)
-
-                taxonomy.append(tax_str + ';' + scientific_name)
-                break
-
-    handle.close()
+                    taxonomy.append(tax_str + ';' + scientific_name)
+                    break
 
     return taxonomy
 
@@ -97,7 +105,6 @@ class DNAFastaNCBIFormat(DNAFASTAFormat):
         self.names = []
         self.taxonomy = []
         self.email = "clr96@nau.edu"
-        Entrez.email = self.email
 
     def get_accession_numbers(self) -> None:
         samps = skbio.read(str(self), format="fasta")
@@ -105,7 +112,7 @@ class DNAFastaNCBIFormat(DNAFASTAFormat):
         for samp in samps:
 
             name = samp.metadata['id']
-            print(name)
+
             self.names.append(name.strip())
 
             if "gb:" in name and self.PIPE in name:
@@ -130,8 +137,8 @@ class DNAFastaNCBIFormat(DNAFASTAFormat):
         accession_number_subsets = _accession_number_split_(self.accession_numbers)
 
         for subset in accession_number_subsets:
-            taxonomy = _get_taxonomy_(subset, tax_df)
-            self.taxonomy = taxonomy
+            taxonomy_out = _get_taxonomy_(subset, tax_df, self.email)
+            self.taxonomy = taxonomy_out
             time.sleep(1)
 
     def _validate_(self, level):
