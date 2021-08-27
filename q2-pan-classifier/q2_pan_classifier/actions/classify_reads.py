@@ -1,4 +1,5 @@
-from os import path
+import os
+from os import path, cpu_count
 
 import pkg_resources
 from jinja2 import Environment, FileSystemLoader
@@ -26,7 +27,8 @@ def classify_reads(ctx, samp_reads, trunc_len_f, trunc_len_r, trained_classifier
     else:
         dada2_table_out, dada2_rep_seqs_out, dada2_stats_out = dada2(demultiplexed_seqs=samp_reads,
                                                                      trunc_len_f=trunc_len_f,
-                                                                     trunc_len_r=trunc_len_r
+                                                                     trunc_len_r=trunc_len_r,
+                                                                     n_threads=get_cpus()
                                                                      )
 
     classified, = classify_sklearn(classifier=trained_classifier, reads=dada2_rep_seqs_out)
@@ -36,7 +38,7 @@ def classify_reads(ctx, samp_reads, trunc_len_f, trunc_len_r, trained_classifier
     tt, = transpose(table=dada2_table_out)
 
     tt_m = tt.view(view_type=qiime2.Metadata)
-    dr_m = dada2_rep_seqs.view(view_type=qiime2.Metadata)
+    dr_m = dada2_rep_seqs_out.view(view_type=qiime2.Metadata)
     c_m = classified.view(view_type=qiime2.Metadata)
 
     # merging table
@@ -61,3 +63,12 @@ def visualization_final(output_dir: str) -> None:
 
     with open(path.join(output_dir, 'index.html'), 'w') as f:
         f.write(jin_out)
+
+
+def get_cpus() -> int:
+    num_cpus = os.cpu_count()
+
+    if num_cpus > 4:
+        return num_cpus - 2
+    else:
+        return num_cpus

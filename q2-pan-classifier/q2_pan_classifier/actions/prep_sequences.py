@@ -1,6 +1,7 @@
 import qiime2
 import os
 import tempfile
+from q2_pan_classifier.actions.classify_reads import get_cpus
 
 def _return_names_(file_path_names: list) -> list:
 
@@ -18,7 +19,7 @@ def _return_names_(file_path_names: list) -> list:
             else:
                 names_out.append(name_split[0])
         else:
-            names_out = name.split('_')[0]
+            names_out = name.split('_jk')[0]
     return names_out
 
 def _generate_manifest_file_(sample_dir_path: str, manifest_file_dir: str) -> tuple:
@@ -88,7 +89,11 @@ def prep_sequence_reads(ctx, sequences_directory, metadata_template_dir=None, pr
     # using plugins to trim reads and create reads visualization
 
     if primer_f and primer_r:
-        trimmed_reads = cut_adapt(demultiplexed_sequences=read_seqs, front_f=[primer_f], front_r=[primer_r])
+        trimmed_reads = cut_adapt(demultiplexed_sequences=read_seqs,
+                                  front_f=[primer_f],
+                                  front_r=[primer_r],
+                                  cores=get_cpus())
+
         table_viz = create_table_viz(data=trimmed_reads.trimmed_sequences)
 
         results += trimmed_reads
