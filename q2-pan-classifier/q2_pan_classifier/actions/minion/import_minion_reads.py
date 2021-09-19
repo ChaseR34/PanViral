@@ -27,7 +27,7 @@ def _concatenate_fastq_(barcodes_directory: str, metadata_file: str = None) -> s
             fastq_files = glob.glob(os.path.join(bar, "*.fastq"))
             for fastq in fastq_files:
 
-                out_seqs += filter_fastq_by_size(fastq, 9000)
+                out_seqs += filter_fastq_by_size(fastq, 10000)
 
             SeqIO.write(out_seqs, outfile, "fastq")
 
