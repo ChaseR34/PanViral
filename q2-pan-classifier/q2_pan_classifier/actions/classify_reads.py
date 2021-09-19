@@ -25,7 +25,7 @@ def _merge_table_(transpose, dada2_table_out, dada2_rep_seqs_out, classified ):
     return merged_table
 
 
-def classify_reads(ctx, samp_reads, trunc_len_f, trunc_len_r, trained_classifier,
+def classify_reads(ctx, trained_classifier, samp_reads=None, trunc_len_f=None, trunc_len_r=None,
                    dada2_table=None, dada2_rep_seqs=None, dada2_stats=None):
     results = []
 

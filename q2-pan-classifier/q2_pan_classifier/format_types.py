@@ -23,6 +23,7 @@ from qiime2.plugin import SemanticType
 
 DNAFastaNCBI = SemanticType('DNAFastaNCBI')
 
+
 class EntrezFetch:
     def __init__(self, email, db, ids, rettype, retmode):
         Entrez.email = email

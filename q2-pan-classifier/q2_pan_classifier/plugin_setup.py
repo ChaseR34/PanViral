@@ -21,7 +21,7 @@ import q2_pan_classifier.actions as actions
 from q2_pan_classifier.format_types import (DNAFastaNCBI, DNAFastaNCBIFormat, DNAFastaNCBIDirFormat)
 from q2_dada2._stats import DADA2Stats
 from q2_types.sample_data import SampleData
-from q2_types.per_sample_sequences import PairedEndSequencesWithQuality
+from q2_types.per_sample_sequences import PairedEndSequencesWithQuality, SequencesWithQuality
 from q2_types.feature_data import FeatureData, Sequence
 from q2_feature_classifier.classifier import TaxonomicClassifier, Taxonomy
 
@@ -85,8 +85,49 @@ plugin.pipelines.register_function(
 )
 
 plugin.pipelines.register_function(
-    function=actions.prep_sequence_reads,
-    inputs={},
+    function=actions.prep_sequence_reads_single,
+    inputs={'sequences': SampleData[SequencesWithQuality]},
+    outputs=[
+        ('trimmed_reads', SampleData[SequencesWithQuality]),
+        ('table_viz', Visualization)
+             ],
+    parameters={
+        'sequences_directory': Str,
+        'metadata_template_dir': Str,
+        'primer_f': Str,
+        'primer_r': Str
+    },
+    input_descriptions=None,
+    parameter_descriptions={
+        'sequences_directory': 'Path to sequences directory',
+        'primer_f': 'Sequence of an adapter ligated to the 3\' end. The '
+                    'adapter and any subsequent bases are trimmed. If a `$` '
+                    'is appended, the adapter is only found if it is at the '
+                    'end of the read. Search in forward read. If your '
+                    'sequence of interest is "framed" by a 5\' and a 3\' '
+                    'adapter, use this parameter to define a "linked" primer '
+                    '- see https://cutadapt.readthedocs.io for complete '
+                    'details.',
+        'primer_r': 'Sequence of an adapter ligated to the 3\' end. The '
+                    'adapter and any subsequent bases are trimmed. If a `$` '
+                    'is appended, the adapter is only found if it is at the '
+                    'end of the read. Search in reverse read. If your '
+                    'sequence of interest is "framed" by a 5\' and a 3\' '
+                    'adapter, use this parameter to define a "linked" primer '
+                    '- see https://cutadapt.readthedocs.io for complete '
+                    'details.'
+    },
+    output_descriptions={
+        'table_viz': 'Visualization of the demultiplexed sequences to assess read quality.'
+                     'The Dada2 truncation inputs will be determined using this visualization.'
+    },
+    name='Read Quality Visualization',
+    description="test"
+)
+
+plugin.pipelines.register_function(
+    function=actions.prep_sequence_reads_paired,
+    inputs={'sequences': SampleData[PairedEndSequencesWithQuality]},
     outputs=[
         ('trimmed_reads', SampleData[PairedEndSequencesWithQuality]),
         ('table_viz', Visualization)

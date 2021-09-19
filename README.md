@@ -65,7 +65,7 @@ The example samples were produced from mosquito samples using the pan-flavi prim
    1. ```bash
       qiime tools import \
         --type 'FeatureData[Sequence]' \
-        --input-path example_viral_db/moureau_2015_ref_sequences.fasta \
+        --input-path example_viral_db/moureau_2015_ref_sequences.fastjka \
         --output-path classifier/panflavi_ref_sequences.qza
       
       qiime tools import \
