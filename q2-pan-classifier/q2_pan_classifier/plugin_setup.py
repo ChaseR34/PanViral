@@ -223,6 +223,52 @@ plugin.pipelines.register_function(
     description="Using a trained classifier to classify unknown reads"
 )
 
+plugin.pipelines.register_function(
+    function=actions.classify_reads_single,
+    inputs={'samp_reads': SampleData[SequencesWithQuality],
+            'trained_classifier': TaxonomicClassifier,
+            'dada2_table': FeatureTable[Frequency],
+            'dada2_rep_seqs': FeatureData[Sequence],
+            'dada2_stats': SampleData[DADA2Stats]
+            },
+    outputs=[('classified', FeatureData[Taxonomy]),
+             ('barplot_taxonomy', Visualization),
+             ('merged_table', Visualization),
+             ('dada2_table_out', FeatureTable[Frequency]),
+             ('dada2_rep_seqs_out', FeatureData[Sequence]),
+             ('dada2_stats_out', SampleData[DADA2Stats])
+             ],
+    parameters={
+        'trunc_len': Int % Range(0, None)
+    },
+    input_descriptions={
+        'samp_reads': 'Path to sample reads Artifact (.qza file)',
+        'trained_classifier':  'Path to trained classifier Artifact (.qza file)',
+    },
+    parameter_descriptions={
+        'trunc_len':   ('Position at which forward read sequences should be '
+                        'truncated due to decrease in quality. This truncates '
+                        'the 3\' end of the of the input sequences, which '
+                        'will be the bases that were sequenced in the last '
+                        'cycles. Reads that are shorter than this value '
+                        'will be discarded. After this parameter is applied '
+                        'there must still be at least a 12 nucleotide overlap '
+                        'between the forward and reverse reads. If 0 is '
+                        'provided, no truncation or length filtering will be '
+                        'performed')
+    },
+    output_descriptions={
+        'dada2_table_out': 'The resulting feature table.',
+        'dada2_rep_seqs_out': 'The resulting feature sequences. Each '
+                          'feature in the feature table will be '
+                          'represented by exactly one sequence.',
+        'dada2_stats_out': 'Stats on Dada2 clustering and filtering',
+        'classified': 'Resulting Taxonomic Artifact from the classification'
+    },
+    name='Classify Reads',
+    description="Using a trained classifier to classify unknown reads"
+)
+
 plugin.visualizers.register_function(
     function=actions.visualization_final,
     inputs={
