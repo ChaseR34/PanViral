@@ -9,6 +9,8 @@ def filter_fastq_by_size(fastq_file_path: str, filter_size: int) -> list:
     with open(fastq_file_path) as handle:
         for record in SeqIO.parse(handle, "fastq"):
             if len(record) >= filter_size:
+                record.letter_annotations = {}
+                record.seq = record.seq[0:16000]
                 out_records.append(record)
 
     return out_records
@@ -23,13 +25,14 @@ def _concatenate_fastq_(barcodes_directory: str, metadata_file: str = None) -> s
         seq_file_name = os.path.join(output_sequence_directory, barcode_name + ".fastq")
         print(seq_file_name)
         with open(seq_file_name, 'w') as outfile:
+
             out_seqs = list()
             fastq_files = glob.glob(os.path.join(bar, "*.fastq"))
             for fastq in fastq_files:
 
-                out_seqs += filter_fastq_by_size(fastq, 9000)
+                out_seqs += filter_fastq_by_size(fastq, 16000)
 
-            SeqIO.write(out_seqs, outfile, "fastq")
+            SeqIO.write(out_seqs, outfile, "fasta")
 
     return output_sequence_directory
 
@@ -48,12 +51,15 @@ def _minion_generate_manifest_file_(barcode_directory: str, manifest_file_dir: s
         for out in zip(sample_names, sample_paths):
             man_file.write('\t'.join(out) + '\n')
 
+def minion_sequence_import(barcode_directory: str):
 
+    pass
 
 
 
 
 if __name__ == '__main__':
-    barcode_directory = '/home/chase/DissertationProjects/Qiime2SummerCamp/PanViral/CulexMitoGenome/sequence_reads'
-    output_sequence_directory = '/home/chase/DissertationProjects/Qiime2SummerCamp/PanViral/CulexMitoGenome/sequence_reads/output_sequences/'
+    barcode_directory = '/home/curly/PanViral/CulexMitoGenome/sequence_reads'
+    output_sequence_directory = '/home/curly/PanViral/CulexMitoGenome/sequence_reads/output_sequences/'
+    #_concatenate_fastq_(barcode_directory)
     _minion_generate_manifest_file_(barcode_directory=barcode_directory, manifest_file_dir=barcode_directory)
