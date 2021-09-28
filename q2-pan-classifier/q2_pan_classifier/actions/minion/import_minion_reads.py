@@ -1,3 +1,4 @@
+import biom
 import qiime2
 import os
 import numpy as np
@@ -5,6 +6,7 @@ from biom.table import Table
 import glob
 import tempfile
 from Bio import SeqIO
+
 
 def filter_fastq_by_size(fastq_file_path: str, filter_size: int) -> list:
     out_records = list()
@@ -19,7 +21,7 @@ def filter_fastq_by_size(fastq_file_path: str, filter_size: int) -> list:
 
 
 def _concatenate_fastq_(barcodes_directory: str, metadata_file: str = None) -> str:
-    output_sequence_directory = os.path.join(barcodes_directory, "output_sequences")
+    output_sequence_directory: str = os.path.join(barcodes_directory, "output_sequences")
     bar_dirs = glob.glob(os.path.join(barcodes_directory, "barcode*"))
     combined_file_path = os.path.join(output_sequence_directory, "combined_all.fasta")
     with open(combined_file_path, 'w') as combined_file:
@@ -34,7 +36,6 @@ def _concatenate_fastq_(barcodes_directory: str, metadata_file: str = None) -> s
                 out_seqs = list()
                 fastq_files = glob.glob(os.path.join(bar, "*.fastq"))
                 for fastq in fastq_files:
-
                     out_seqs += filter_fastq_by_size(fastq, 16000)
 
                 combined_seqs += out_seqs
@@ -44,10 +45,11 @@ def _concatenate_fastq_(barcodes_directory: str, metadata_file: str = None) -> s
 
     return output_sequence_directory
 
- def _generate_feature_table_(sequences_directory: str, path_to_combined_fasta:str) -> Table:
+
+def _generate_feature_table_(sequences_directory: str, path_to_combined_fasta: str) -> Table:
     sample_files = glob.glob(os.path.join(sequences_directory, "barcode*"))
 
-    sample_names = [(os.path.basename(i)).replace(".fasta","") for i in sample_files]
+    sample_names = [(os.path.basename(i)).replace(".fasta", "") for i in sample_files]
     sequence_data = dict()
 
     with open(path_to_combined_fasta, "r") as combined_file:
@@ -55,8 +57,28 @@ def _concatenate_fastq_(barcodes_directory: str, metadata_file: str = None) -> s
         for record in SeqIO.parse(combined_file, "fasta"):
             sequence_data.update({record.id: 0})
 
+    sequence_names = [i for i in sequence_data.keys()]
+
+    table_data = []
+
+    for indx, sample_file in enumerate(sample_files):
+        sd_tmp_dict = sequence_data.copy()
+        with open(sample_file, 'r') as handle:
+            for record in SeqIO.parse(handle, 'fasta'):
+                sd_tmp_dict[record.id] = 1
+
+            sd_tmp_values = [i for i in sd_tmp_dict.values()]
+            table_data.append(sd_tmp_values)
+
+    seq_names_array = np.array(sequence_names)
+    samp_names_array = np.array(sample_names)
+    td_array = np.transpose(np.array(table_data))
 
 
+
+    table_out = Table(data=td_array, observation_ids=seq_names_array, sample_ids=samp_names_array, table_id="minion_frequency_table")
+
+    return table_out
 
 
 def _minion_generate_manifest_file_(barcode_directory: str, manifest_file_dir: str) -> None:
@@ -73,15 +95,26 @@ def _minion_generate_manifest_file_(barcode_directory: str, manifest_file_dir: s
         for out in zip(sample_names, sample_paths):
             man_file.write('\t'.join(out) + '\n')
 
-def minion_sequence_import(barcode_directory: str):
 
+def minion_sequence_import(barcode_directory: str):
     pass
 
 
 
 
 if __name__ == '__main__':
-    barcode_directory = '/home/chase/DissertationProjects/Qiime2SummerCamp/PanViral/CulexMitoGenome/sequence_reads'
-    output_sequence_directory = '/home/chase/DissertationProjects/Qiime2SummerCamp/PanViral/CulexMitoGenome/sequence_reads/output_sequences/'
-    #_concatenate_fastq_(barcode_directory)
-    _minion_generate_manifest_file_(barcode_directory=barcode_directory, manifest_file_dir=barcode_directory)
+
+    import biom
+    barcode_directory = '/home/curly/PanViral/CulexMitoGenome/sequence_reads/testing'
+    output_sequence_directory = '/home/curly/PanViral/CulexMitoGenome/sequence_reads/testing/output_sequences/'
+
+    # _concatenate_fastq_(barcode_directory)
+    # _minion_generate_manifest_file_(barcode_directory=barcode_directory, manifest_file_dir=barcode_directory)
+
+    combined_fasta = os.path.join(output_sequence_directory, 'combined_all.fasta')
+    t_out = _generate_feature_table_(output_sequence_directory, combined_fasta)
+
+    with biom.util.biom_open(os.path.join(output_sequence_directory, "minion_table.biom"), 'w') as ff:
+        t_out.to_hdf5(ff, "minion frequency table")
+
+
